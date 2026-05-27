@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: 법무사 여환동 개인회생 자격진단",
+  "description": "1분, 5개 질문으로 확인하는 법무사 여환동의 개인회생 신청자격 및 채무 탕감 자가 시뮬레이션 서비스",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,97 @@
+[
+  {
+    "id": "sub_3vus6qdaf",
+    "name": "신속상담_카톡",
+    "phone": "010-1234-5678",
+    "occupation": "",
+    "debtAmount": "",
+    "hasMoreDebtThanAssets": "",
+    "region": "",
+    "difficulties": [
+      "카카오톡상담"
+    ],
+    "ageGroup": "",
+    "status": "신청완료",
+    "counselorNotes": "테스트",
+    "createdAt": "2026-05-27T14:58:33.953Z",
+    "updatedAt": "2026-05-27T14:58:33.953Z",
+    "isSimpleConsultation": true
+  },
+  {
+    "id": "sub_yqcgphbg8",
+    "name": "신속상담_전화",
+    "phone": "010-8012-5769",
+    "occupation": "",
+    "debtAmount": "",
+    "hasMoreDebtThanAssets": "",
+    "region": "",
+    "difficulties": [
+      "전화상담"
+    ],
+    "ageGroup": "",
+    "status": "신청완료",
+    "counselorNotes": "[실시간 간편 예약]\n희망 일시: 즉시 상담 희망(가장 빠른 시간 연락)\n상담 종류: 전화상담\n요청 번호: 010-8012-5769",
+    "createdAt": "2026-05-27T14:54:52.515Z",
+    "updatedAt": "2026-05-27T14:54:52.515Z",
+    "isSimpleConsultation": true
+  },
+  {
+    "id": "sub_1",
+    "name": "김민재",
+    "phone": "010-8234-9004",
+    "occupation": "regular_employee",
+    "debtAmount": "50m_100m",
+    "monthlyIncome": "200_300",
+    "dependentsCount": "2",
+    "hasMoreDebtThanAssets": "yes",
+    "region": "seoul_metropolitan",
+    "difficulties": [
+      "high_interest",
+      "living_cost"
+    ],
+    "ageGroup": "30대",
+    "status": "상담중",
+    "counselorNotes": "3천만원 추가 이자 부담으로 가용 소득의 부족을 호소함. 2026 최저생계비 기준 적용하여 월 120만원 수준 조정 및 최근 대출 소명안 논의 중.",
+    "createdAt": "2026-05-27T09:41:18.885Z",
+    "updatedAt": "2026-05-27T10:41:18.886Z"
+  },
+  {
+    "id": "sub_2",
+    "name": "이지영",
+    "phone": "010-3345-7182",
+    "occupation": "business_owner",
+    "debtAmount": "over_100m",
+    "monthlyIncome": "300_400",
+    "dependentsCount": "3",
+    "hasMoreDebtThanAssets": "yes",
+    "region": "seoul_metropolitan",
+    "difficulties": [
+      "debt_repayment",
+      "guarantee"
+    ],
+    "ageGroup": "40대",
+    "status": "신청완료",
+    "counselorNotes": "",
+    "createdAt": "2026-05-27T12:41:18.886Z",
+    "updatedAt": "2026-05-27T12:41:18.886Z"
+  },
+  {
+    "id": "sub_3",
+    "name": "최성우",
+    "phone": "010-5561-1209",
+    "occupation": "freelancer_parttime",
+    "debtAmount": "30m_50m",
+    "monthlyIncome": "150_200",
+    "dependentsCount": "1",
+    "hasMoreDebtThanAssets": "yes",
+    "region": "other_regions",
+    "difficulties": [
+      "living_cost"
+    ],
+    "ageGroup": "20대",
+    "status": "접수완료",
+    "counselorNotes": "단독 거주 최저생계비 소득 보충 소명서 첨부 예정. 성실 상환 의사 매우 높음.",
+    "createdAt": "2026-05-27T02:41:18.886Z",
+    "updatedAt": "2026-05-27T04:41:18.886Z"
+  }
+]
