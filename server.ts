@@ -449,54 +449,59 @@ async function startServer() {
 
   // API: Insert new Submission
   app.post("/api/submissions", (req, res) => {
-    const body = req.body;
-    if (!body.name || !body.phone) {
-      res.status(400).json({ error: "이름과 연락처는 필수 입력항목입니다." });
-      return;
+    try {
+      const body = req.body;
+      if (!body.name || !body.phone) {
+        res.status(400).json({ error: "이름과 연락처는 필수 입력항목입니다." });
+        return;
+      }
+
+      const list = readSubmissions();
+      const newId = "sub_" + Math.random().toString(36).substr(2, 9);
+      const isSimple = !!body.isSimpleConsultation;
+
+      const newSubmission: Submission = {
+        id: newId,
+        name: body.name,
+        phone: body.phone,
+        occupation: isSimple ? "" : (body.occupation || "regular_employee"),
+        debtAmount: isSimple ? "" : (body.debtAmount || "30m_50m"),
+        monthlyIncome: isSimple ? undefined : body.monthlyIncome,
+        dependentsCount: isSimple ? undefined : body.dependentsCount,
+        hasMoreDebtThanAssets: isSimple ? "" : (body.hasMoreDebtThanAssets || "yes"),
+        region: isSimple ? "" : (body.region || "seoul_metropolitan"),
+        difficulties: body.difficulties || [],
+        ageGroup: isSimple ? "" : (body.ageGroup || "30대"),
+        status: "신청완료",
+        counselorNotes: body.counselorNotes || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isSimpleConsultation: isSimple
+      };
+
+      list.unshift(newSubmission); // prepend so newest is first
+      writeSubmissions(list);
+
+      // Send instant SMS notification to administrator securely via Solapi (non-blocking)
+      let smsText = "";
+      if (isSimple) {
+        const typeLabel = (body.difficulties && body.difficulties[0]) ? body.difficulties[0] : "실시간간편예약";
+        const notes = body.counselorNotes || "";
+        const cleanedNotes = notes.replace("[실시간 간편 예약]\n", "").replace("[실시간 간편 예약]", "").trim();
+        smsText = `[실시간상담 간편예약 접수]\n상담 구분: ${typeLabel}\n의뢰인 연락처: ${body.phone}\n상세 내용:\n${cleanedNotes}`;
+      } else {
+        smsText = `[종합 실시간 자가진단 접수]\n의뢰인 성함: ${body.name}\n의뢰인 연락처: ${body.phone}\n상태: 신청완료 수령`;
+      }
+
+      sendSolapiSms(smsText).catch(err => {
+        console.error("[Solapi] Failed to send background SMS alert:", err);
+      });
+
+      res.status(201).json({ success: true, submissionId: newId });
+    } catch (routeErr: any) {
+      console.error("[CRITICAL] Error in POST /api/submissions handler:", routeErr);
+      res.status(500).json({ error: "상담 접수를 처리하는 도중 서버 내부 오류가 발생했습니다: " + (routeErr.message || routeErr) });
     }
-
-    const list = readSubmissions();
-    const newId = "sub_" + Math.random().toString(36).substr(2, 9);
-    const isSimple = !!body.isSimpleConsultation;
-
-    const newSubmission: Submission = {
-      id: newId,
-      name: body.name,
-      phone: body.phone,
-      occupation: isSimple ? "" : (body.occupation || "regular_employee"),
-      debtAmount: isSimple ? "" : (body.debtAmount || "30m_50m"),
-      monthlyIncome: isSimple ? undefined : body.monthlyIncome,
-      dependentsCount: isSimple ? undefined : body.dependentsCount,
-      hasMoreDebtThanAssets: isSimple ? "" : (body.hasMoreDebtThanAssets || "yes"),
-      region: isSimple ? "" : (body.region || "seoul_metropolitan"),
-      difficulties: body.difficulties || [],
-      ageGroup: isSimple ? "" : (body.ageGroup || "30대"),
-      status: "신청완료",
-      counselorNotes: body.counselorNotes || "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isSimpleConsultation: isSimple
-    };
-
-    list.unshift(newSubmission); // prepend so newest is first
-    writeSubmissions(list);
-
-    // Send instant SMS notification to administrator securely via Solapi (non-blocking)
-    let smsText = "";
-    if (isSimple) {
-      const typeLabel = (body.difficulties && body.difficulties[0]) ? body.difficulties[0] : "실시간간편예약";
-      const notes = body.counselorNotes || "";
-      const cleanedNotes = notes.replace("[실시간 간편 예약]\n", "").replace("[실시간 간편 예약]", "").trim();
-      smsText = `[실시간상담 간편예약 접수]\n상담 구분: ${typeLabel}\n의뢰인 연락처: ${body.phone}\n상세 내용:\n${cleanedNotes}`;
-    } else {
-      smsText = `[종합 실시간 자가진단 접수]\n의뢰인 성함: ${body.name}\n의뢰인 연락처: ${body.phone}\n상태: 신청완료 수령`;
-    }
-
-    sendSolapiSms(smsText).catch(err => {
-      console.error("[Solapi] Failed to send background SMS alert:", err);
-    });
-
-    res.status(201).json({ success: true, submissionId: newId });
   });
 
   // API: Get List of Submissions (Protected)

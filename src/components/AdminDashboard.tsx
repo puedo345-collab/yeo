@@ -85,6 +85,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [solapiError, setSolapiError] = useState("");
   const [solapiSuccess, setSolapiSuccess] = useState("");
 
+  // Brand Logo and Lawyer Profile Photo Modal States
+  const [isImagesOpen, setIsImagesOpen] = useState(false);
+  const [logoBase64, setLogoBase64] = useState("");
+  const [profileBase64, setProfileBase64] = useState("");
+  const [imagesError, setImagesError] = useState("");
+  const [imagesSuccess, setImagesSuccess] = useState("");
+
   const handleOpenSolapiModal = async () => {
     setIsSolapiOpen(true);
     setSolapiError("");
@@ -190,6 +197,97 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       }
     } catch (err) {
       setKakaoUrlError("네트워크 서버와 통신 도중 실패했습니다.");
+    }
+  };
+
+  const handleOpenImagesModal = async () => {
+    setIsImagesOpen(true);
+    setImagesError("");
+    setImagesSuccess("");
+    try {
+      // Get logo image
+      const resLogo = await fetch("/api/logo-image");
+      const dataLogo = await resLogo.json();
+      if (dataLogo && dataLogo.image) {
+        setLogoBase64(dataLogo.image);
+      } else {
+        setLogoBase64("");
+      }
+      
+      // Get profile image
+      const resProfile = await fetch("/api/profile-image");
+      const dataProfile = await resProfile.json();
+      if (dataProfile && dataProfile.image) {
+        setProfileBase64(dataProfile.image);
+      } else {
+        setProfileBase64("");
+      }
+    } catch (err) {
+      console.error("Error loading images config:", err);
+    }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "profile") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setImagesError("이미지 크기는 최대 2MB까지 지원됩니다. 다른 이미지를 선택하세요.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      if (type === "logo") {
+        setLogoBase64(base64);
+      } else {
+        setProfileBase64(base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUpdateImages = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setImagesError("");
+    setImagesSuccess("");
+
+    try {
+      // Update logo image
+      const resLogo = await fetch("/api/logo-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image: logoBase64 })
+      });
+      if (!resLogo.ok) {
+        throw new Error("로고 업로드 중 서버 오류가 발생했습니다.");
+      }
+
+      // Update profile image
+      const resProfile = await fetch("/api/profile-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image: profileBase64 })
+      });
+      if (!resProfile.ok) {
+        throw new Error("프로필 사진 업로드 중 서버 오류가 발생했습니다.");
+      }
+
+      setImagesSuccess("로고 및 프로필 사진이 성공적으로 저장되었습니다!");
+      setTimeout(() => {
+        setIsImagesOpen(false);
+        setImagesSuccess("");
+        // Reload page to re-render in Header and LawyerIntroduction
+        window.location.reload();
+      }, 1500);
+
+    } catch (err: any) {
+      setImagesError(err.message || "이미지 저장에 실패했습니다.");
     }
   };
 
@@ -600,6 +698,14 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                   >
                     <Key className="w-4 h-4 text-emerald-400" />
                     비밀번호 변경
+                  </button>
+                  <button
+                    onClick={handleOpenImagesModal}
+                    className="p-3 bg-white/5 hover:bg-white/10 active:scale-95 text-pink-300 hover:text-pink-200 font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center gap-1.5 border border-white/5"
+                    title="대표 로고 및 법무사 스마트 프로필 사진 설정"
+                  >
+                    <User className="w-4 h-4 text-pink-400" />
+                    디자인/사진 변경
                   </button>
                    <button
                     onClick={handleOpenKakaoUrlModal}
@@ -1307,6 +1413,164 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                               className="flex-1 py-3.5 bg-sky-550 bg-sky-600 hover:bg-sky-500 text-white font-extrabold rounded-xl text-xs shadow-md transition-colors cursor-pointer text-center"
                             >
                               알림 설정 저장
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+              
+              {/* Brand Logo & Lawyer Profile Photo Setting Modal */}
+              <AnimatePresence>
+                {isImagesOpen && (
+                  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => {
+                        setIsImagesOpen(false);
+                        setImagesError("");
+                      }}
+                      className="absolute inset-0 bg-slate-950"
+                    />
+
+                    {/* Modal Body */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                      className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative z-10 border border-slate-100 overflow-hidden text-slate-900"
+                    >
+                      <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-pink-500 to-rose-600 bg-pink-500" />
+                      
+                      <button
+                        onClick={() => {
+                          setIsImagesOpen(false);
+                          setImagesError("");
+                        }}
+                        className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+                        aria-label="닫기"
+                        type="button"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+
+                      <div className="space-y-4 pt-2">
+                        <div className="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center mx-auto sm:mx-0">
+                          <User className="w-6 h-6" />
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-black tracking-tight text-slate-900 text-center sm:text-left">
+                            로고 및 프로필 사진 설정 변경
+                          </h3>
+                          <p className="text-xs text-slate-400 font-semibold leading-relaxed text-center sm:text-left">
+                            헤더 로고(모바일/PC 탑 브랜드바) 및 법무사 소개 페이지 대표 프로필 사진을 직접 실시간 업로드하여 최신 상태로 조율합니다.
+                          </p>
+                        </div>
+
+                        <form onSubmit={handleUpdateImages} className="space-y-5 pt-2 text-left">
+                          
+                          {/* Part 1: Official Logo Upload */}
+                          <div className="space-y-2">
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                              1. 공식 홈페이지 로고 (추천: PNG, 크기 120x120px)
+                            </label>
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
+                                {logoBase64 ? (
+                                  <img src={logoBase64} alt="로고 미리보기" className="w-full h-full object-contain" />
+                                ) : (
+                                  <span className="text-xs text-slate-400 font-bold">없음</span>
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleImageFileChange(e, "logo")}
+                                  className="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100 cursor-pointer"
+                                />
+                                {logoBase64 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLogoBase64("")}
+                                    className="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
+                                  >
+                                    기본 로고(아이콘)로 초기화
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Part 2: Lawyer Portrait Photo Upload */}
+                          <div className="space-y-2">
+                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                              2. 법무사 대표 프로필 사진 (추천: 정장 프로필 이미지)
+                            </label>
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-18 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
+                                {profileBase64 ? (
+                                  <img src={profileBase64} alt="프로필 미리보기" className="w-full h-full object-cover object-top" />
+                                ) : (
+                                  <span className="text-xs text-slate-400 font-bold">없음</span>
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleImageFileChange(e, "profile")}
+                                  className="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer"
+                                />
+                                {profileBase64 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setProfileBase64("")}
+                                    className="text-[10px] text-rose-500 font-bold hover:underline cursor-pointer"
+                                  >
+                                    기본 프로필 사진으로 초기화
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {imagesError && (
+                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2 text-rose-700 text-xs font-bold text-left leading-relaxed">
+                              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                              <span>{imagesError}</span>
+                            </div>
+                          )}
+
+                          {imagesSuccess && (
+                            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-2 text-emerald-800 text-xs font-bold text-left leading-relaxed">
+                              <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                              <span>{imagesSuccess}</span>
+                            </div>
+                          )}
+
+                          <div className="pt-2 flex gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsImagesOpen(false);
+                                setImagesError("");
+                              }}
+                              className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer text-center"
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="submit"
+                              className="flex-1 py-3.5 bg-pink-600 hover:bg-pink-500 text-white font-extrabold rounded-xl text-xs shadow-md transition-colors cursor-pointer text-center"
+                            >
+                              설정 및 사진 저장
                             </button>
                           </div>
                         </form>
