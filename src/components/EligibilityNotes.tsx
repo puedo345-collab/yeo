@@ -3,6 +3,35 @@ import { motion, AnimatePresence } from 'motion/react';
 import { FAQ_ITEMS } from '../data';
 import { Scale, CheckCircle2, AlertCircle, Sparkles, ChevronDown, ChevronUp, Lock, Target, HelpCircle, Landmark, ArrowRight, Library, FileText, Check } from 'lucide-react';
 
+const renderQuestionWithHighlight = (text: string) => {
+  const highlights = [
+    { term: "울산법무사 사무실", className: "text-indigo-600 font-extrabold bg-indigo-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "1년 이내에 발생한 대출", className: "text-indigo-600 font-extrabold bg-indigo-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "가족 모르게", className: "text-emerald-700 font-extrabold bg-emerald-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "주식, 코인, 토토", className: "text-rose-600 font-extrabold bg-rose-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "주식 코인 토토", className: "text-rose-600 font-extrabold bg-rose-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "채무 독촉은 언제 중단", className: "text-emerald-600 font-extrabold bg-emerald-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "빨간딱지", className: "text-rose-600 font-extrabold bg-rose-50/60 px-1.5 py-0.5 rounded-md" },
+    { term: "주택에 경매", className: "text-rose-700 font-extrabold bg-rose-50/60 px-1.5 py-0.5 rounded-md" }
+  ];
+
+  const escapedTerms = highlights.map(h => h.term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+  const regex = new RegExp(`(${escapedTerms.join('|')})`, 'g');
+
+  const parts = text.split(regex);
+  return parts.map((part, i) => {
+    const match = highlights.find(h => h.term === part);
+    if (match) {
+      return (
+        <span key={i} className={match.className}>
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
+
 export default function EligibilityNotes() {
   const [activeTab, setActiveTab] = useState<'rehabilitation' | 'bankruptcy'>('rehabilitation');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -29,7 +58,7 @@ export default function EligibilityNotes() {
   }, []);
 
   return (
-    <section className="pt-16 md:pt-24 lg:pt-30 pb-16 md:pb-24 lg:pb-30 bg-gradient-to-b from-slate-100/40 via-slate-50 to-white border-b border-slate-100">
+    <section className="pt-[58px] md:pt-[86px] lg:pt-[108px] pb-16 md:pb-24 lg:pb-30 bg-gradient-to-b from-slate-100/40 via-slate-50 to-white border-b border-slate-100">
       <div className="max-w-5xl md:max-w-6xl mx-auto px-4 sm:px-8">
         
         {/* Dynamic Tab Switch Selector */}
@@ -37,7 +66,7 @@ export default function EligibilityNotes() {
           <div className="inline-flex bg-slate-250/90 p-1 rounded-xl gap-1 w-full max-w-[414px] shadow-sm border border-slate-300/40">
             <button
                onClick={() => setActiveTab('rehabilitation')}
-              className={`flex-1 px-2.5 sm:px-4.5 py-2 sm:py-2.5 rounded-lg text-[12.1px] sm:text-[13.2px] font-extrabold tracking-tight transition-all duration-300 cursor-pointer ${
+              className={`flex-1 px-2.5 sm:px-4.5 py-2 sm:py-2.5 rounded-lg text-[14.6px] sm:text-[16px] font-extrabold tracking-tight transition-all duration-300 cursor-pointer ${
                 activeTab === 'rehabilitation'
                   ? 'bg-white text-emerald-900 shadow-md scale-[1.01] border border-slate-100/50 font-black'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/30'
@@ -47,7 +76,7 @@ export default function EligibilityNotes() {
             </button>
             <button
                onClick={() => setActiveTab('bankruptcy')}
-              className={`flex-1 px-2.5 sm:px-4.5 py-2 sm:py-2.5 rounded-lg text-[12.1px] sm:text-[13.2px] font-extrabold tracking-tight transition-all duration-300 cursor-pointer ${
+              className={`flex-1 px-2.5 sm:px-4.5 py-2 sm:py-2.5 rounded-lg text-[14.6px] sm:text-[16px] font-extrabold tracking-tight transition-all duration-300 cursor-pointer ${
                 activeTab === 'bankruptcy'
                   ? 'bg-white text-emerald-950 shadow-md scale-[1.01] border border-slate-100/50 font-black'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/30'
@@ -289,7 +318,7 @@ export default function EligibilityNotes() {
                   </h2>
                 </div>
                 <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-500 font-medium max-w-3xl mx-auto leading-relaxed px-2">
-                  일부 금액을 매달 변제해 나가는 회생 절차와 다르게, 법원이 파산선고 결정 후 즉시 원금 및 이자에 대해 <strong className="text-slate-950 font-black text-emerald-700">100% 면책(전액 탕감)</strong>처리를 내려주는 최고 수준의 구제제도입니다.
+                  법원이 파산선고를 한 후 채무자 소유의 재산을 환가해 배당한 다음 그래도 남은 채무에 대해 100% 탕감 처리를 해주는 법원의 구제 수단입니다.
                 </p>
               </div>
 
@@ -302,7 +331,7 @@ export default function EligibilityNotes() {
                   <div className="space-y-2 text-left">
                     <h4 className="font-extrabold text-slate-800 text-base sm:text-lg">소득불능 및 최저생계비 미달</h4>
                     <p className="text-xs sm:text-sm text-slate-500 font-bold leading-relaxed font-sans">
-                      소득이 전혀 없거나 소득이 있더라도 보건복지부 기준 최저생계비 미만이어야 합니다. 특히 고령(통상 만 60세 이상), 큰 질병, 장애 등 객관적으로 경제 활동이 불가능하다는 점을 증명하는 것이 최선입니다.
+                      소득이 전혀 없거나 소득이 있더라도 보건복지부 기준 최저생계비 미만이어야 합니다. 특히 고령(통상 만 60세 이상), 큰 질병, 장애 등 객관적으로 경제 활동이 불가능하거나 곤란하다는 점을 증명하는 것이 최우선 과제입니다.
                     </p>
                   </div>
                 </div>
@@ -326,7 +355,7 @@ export default function EligibilityNotes() {
                   <div className="space-y-2 text-left">
                     <h4 className="font-extrabold text-slate-800 text-base sm:text-lg">면책 불허가 사유의 배제</h4>
                     <p className="text-xs sm:text-sm text-slate-500 font-bold leading-relaxed font-sans">
-                      고의로 고액의 재산을 타인 명의로 넘기거나 은닉하고 거짓 진술하는 행위가 없어야 합니다. 또한 단순 과도한 도박, 사치 등은 불합리한 행위로 판단되어 기각 사유가 될 수 있으므로 법무사 조력이 절대적으로 필요합니다.
+                      고의로 고액의 재산을 타인 명의로 넘기거나 은닉하고 거짓 진술하는 행위가 없어야 합니다. 또한 단순 과도한 도박, 사치 등은 불합리한 행위나 소비로 판단되어 기각 사유가 될 수 있으므로 법무사 조력이 절대적으로 필요합니다.
                     </p>
                   </div>
                 </div>
@@ -337,10 +366,10 @@ export default function EligibilityNotes() {
                 <div className="text-center mb-8 md:mb-10 lg:mb-12">
                   <div className="space-y-4 sm:space-y-6">
                     <span className="text-indigo-800 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase block">진행 단계</span>
-                    <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인파산 & 면책 결정 과정</h3>
+                    <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인파산 면책 과정</h3>
                   </div>
                   <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-xl mx-auto">
-                    법무사 여환동 사무소와 함께 세세하고 빈틈없는 서명 소명을 통과하여 최종 면책 결정까지 진행되는 핵심 4단계 과정 안내입니다.
+                    법무사 여환동 사무소와 함께 최종 면책 결정까지 진행되는 핵심 4단계 과정입니다.
                   </p>
                 </div>
 
@@ -357,7 +386,7 @@ export default function EligibilityNotes() {
                   <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 relative">
                     <div className="absolute top-4 right-4 text-xs font-black text-slate-300">STAGE 02</div>
                     <Library className="w-8 h-8 text-emerald-600 mb-3" />
-                    <h5 className="font-extrabold text-sm sm:text-base text-slate-900 font-sans">파산관재인 선임 & 선고</h5>
+                    <h5 className="font-extrabold text-sm sm:text-base text-slate-900 font-sans">파산선고 & 관재인 선임</h5>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed mt-2 font-sans">
                       법원이 채무 실태 및 파산 원인 조사를 위해 관재인을 지정하여 대면 심사 및 객관적 재산 세부 실사를 거쳐 법리적 판단을 선언합니다.
                     </p>
@@ -386,8 +415,8 @@ export default function EligibilityNotes() {
               {/* Cross Comparison Section: 회생 vs 파산 */}
               <div className="border-t border-slate-200/50 pt-20 max-w-4xl mx-auto">
                 <div className="text-center mb-8 md:mb-10 lg:mb-12">
-                  <h4 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인회생 vs 개인파산 비교</h4>
-                  <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-xl mx-auto">어떤 제도가 나에게 더 유리할까요? 명확하게 구분해 드립니다.</p>
+                  <h4 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인회생 vs 개인파산</h4>
+                  <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-xl mx-auto">어떤 제도가 나에게 더 유리할까? 정확히 구분해야 합니다.</p>
                 </div>
 
                 <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-3xs">
@@ -407,8 +436,8 @@ export default function EligibilityNotes() {
                       </tr>
                       <tr>
                         <td className="p-4 font-black text-slate-800 bg-slate-50/5">원금 감면율</td>
-                        <td className="p-4 bg-emerald-50/5">법원 승인된 가용 소득 외 원금 최대 90% 상당 감면</td>
-                        <td className="p-4 bg-indigo-50/5 font-bold text-slate-900">최종 면책 시 무조건 채무액 <span className="text-indigo-600 font-extrabold">100% 면제</span></td>
+                        <td className="p-4 bg-emerald-50/5 font-bold text-slate-900">법원 승인된 가용 소득 외 원금 <span className="text-emerald-600 font-extrabold">최대 90% 상당 감면</span></td>
+                        <td className="p-4 bg-indigo-50/5 font-bold text-slate-900">최종 면책 시 남은 채무액 <span className="text-indigo-600 font-extrabold">100% 면제</span></td>
                       </tr>
                       <tr>
                         <td className="p-4 font-black text-slate-800 bg-slate-50/5">최대 채무 한도</td>
@@ -418,7 +447,7 @@ export default function EligibilityNotes() {
                       <tr>
                         <td className="p-4 font-black text-slate-800 bg-slate-50/5">신용 회복 기간</td>
                         <td className="p-4 bg-emerald-50/5">3년 ~ 5년 장래 변제금 분할 납부 시점 동안 유지</td>
-                        <td className="p-4 bg-indigo-50/5 font-semibold text-slate-700">법원의 면책 승인 완료와 동시에 즉각 즉시 정상화</td>
+                        <td className="p-4 bg-indigo-50/5 font-semibold text-slate-700">면책결정이 있은 후 일정기간 파산사실 등록됨</td>
                       </tr>
                     </tbody>
                   </table>
@@ -429,13 +458,13 @@ export default function EligibilityNotes() {
         </AnimatePresence>
 
         {/* Accordion FAQ Area ("세상의 이야기") */}
-        <div id="faq" className="scroll-mt-24 md:scroll-mt-28 pt-20 md:pt-28 lg:pt-36 border-t border-slate-200/50">
+        <div id="faq" className="scroll-mt-14 md:scroll-mt-16 pt-12 md:pt-16 mt-16 md:mt-24 border-t border-slate-200/50">
           <div className="text-center">
             <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.12]">자주 묻는 질문</h3>
-            <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-2xl mx-auto leading-relaxed">의뢰인분들이 가장 궁금해하고 자주하는 질문을 모아봤습니다.</p>
+            <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-2xl mx-auto leading-relaxed">의뢰인분들이 가장 궁금해하고 자주하는 질문 모음입니다.</p>
           </div>
 
-          <div className="mt-12 sm:mt-16 max-w-3xl mx-auto space-y-4">
+          <div className="mt-10 sm:mt-12 max-w-3xl mx-auto space-y-4">
             {FAQ_ITEMS.map((faq) => {
               const isSelected = activeFaq === faq.id;
               return (
@@ -450,7 +479,7 @@ export default function EligibilityNotes() {
                   >
                     <span className="flex items-center gap-2">
                       <HelpCircle className="w-4.5 h-4.5 text-slate-400 shrink-0" />
-                      {faq.question}
+                      <span>{renderQuestionWithHighlight(faq.question)}</span>
                     </span>
                     {isSelected ? <ChevronUp className="w-4.5 h-4.5 text-slate-550 shrink-0" /> : <ChevronDown className="w-4.5 h-4.5 text-slate-450 shrink-0" />}
                   </button>

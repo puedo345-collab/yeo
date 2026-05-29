@@ -221,7 +221,7 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
       ringColor = 'ring-rose-150';
     } else if (responses.hasMoreDebtThanAssets === 'no') {
       reductionRate = 0; // Asset greater than debt is legally blocked
-      warningMsg = '※ 신청 불가 우려: 보유하신 가치 재산의 합산액이 총 채무액보다 많을 경우, 채무초과 및 지급 불능 상태로 인정받지 못해 법원 심사관으로부터 기각 결정을 받게 됩니다. 다만, 일반 개인이 산정할 때 범하기 쉬운 계산 착오(담보 채무 부채의 근저당권 채무 차감 누락, 세금/체납금 반전 계산, 임차보증금 소액보증금 범위 면제 등)를 정밀 분석하여 보정하면 재산 평가 가액이 극적으로 차감되어 회생 진행이 즉시 가능해지는 사례가 매우 빈번합니다. 실제 실익 소실 위험을 피할 수 있도록 법무사와 개별 상담을 통해 재산 정밀 재평가를 꼭 받아보시길 강력 추천합니다.';
+      warningMsg = '※ 신청 불가 우려: 보유하신 순 재산의 합산액이 총 채무액보다 많을 경우, 채무초과를 인정받지 못해 법원으로부터 기각 결정을 받게 됩니다. 다만, 일반 개인이 재산을 산정할 때 범하기 쉬운 계산 착오(부동산에서 담보 채무를 공제하지 않는 착오, 임차보증금에서 소액보증금을 공제하지 않는 착오 등)를 재 검토하면 재산 평가 가액이 낮아져 회생 진행이 가능해지는 사례가 매우 빈번하므로, 재산가액을 정확히 산정할 수 없는 분은 법무사와 개별 상담을 통해 재산 재평가를 받아보시길 강력 추천합니다.';
       eligibilityGrade = '기각 확률 높음 (재산 분석 요망)';
       progressColor = 'bg-amber-500';
       textColor = 'text-amber-700';
@@ -341,7 +341,7 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
             </div>
             
             <div className="space-y-2">
-              <h3 className="text-xl font-extrabold text-slate-800">법무사 여환동 자가 시뮬레이션 작동 중</h3>
+              <h3 className="text-xl font-extrabold text-slate-800">자가진단 시뮬레이션 작동 중</h3>
               <p className="text-sm font-semibold text-slate-500 h-6">
                 {stepMsg}
               </p>
@@ -534,7 +534,7 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
                     <span className="text-xs text-blue-700 font-extrabold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 inline-block">
                       총 {est.method1Term}개월 상환 (조기 종결)
                     </span>
-                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-1">
+                    <p className="text-xs font-bold text-blue-600 leading-relaxed pt-1">
                       ※ 월 소득에서 최저생계비를 차감한 가용소득 전체를 투입하여, 36개월보다 짧은 기간 내에 종결하는 플랜입니다.
                     </p>
                   </div>
@@ -549,7 +549,7 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
                     <span className="text-xs text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 inline-block">
                       총 36개월 분기 상환 (지출 완화)
                     </span>
-                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-1">
+                    <p className="text-xs font-bold text-emerald-600 leading-relaxed pt-1">
                       ※ 총 부채 원금을 36개월간 균등 배분하여 월 부담액을 최소 수준으로 변제하는 플랜입니다.
                     </p>
                   </div>
@@ -557,13 +557,13 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
               </div>
             ) : (
               <div className="space-y-2">
-                <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest block">
+                <span className="text-xs font-bold text-slate-500 leading-relaxed block">
                   36개월 월 예상 변제금
                 </span>
                 <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
                   {est.reductionRate > 0 ? `월 약 ${est.monthlyPaymentStr}` : '별도 상담 요망'}
                 </p>
-                <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-2">
+                <p className="text-xs font-bold text-slate-500 leading-relaxed pt-2">
                   ※ 개인회생을 통해 본인이 매월 부담해야 하는 변제 금액 (2026년 최저생계비 기준 적용 시뮬레이션)
                 </p>
               </div>
@@ -571,14 +571,14 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
           </div>
 
           <div className="p-4 sm:p-5 rounded-2xl border border-violet-100 bg-violet-50/30 space-y-2 flex flex-col justify-between">
-            <span className="text-[10px] sm:text-[11px] font-black text-violet-700 uppercase tracking-widest block">법무사 여환동의 안심 케어</span>
-            <ul className="text-[11px] text-slate-700 font-bold space-y-2 py-1">
+            <span className="text-[11.5px] sm:text-[12.6px] font-black text-violet-700 uppercase tracking-widest block">법무사 여환동의 안심 케어</span>
+            <ul className="text-[12.6px] text-slate-700 font-bold space-y-2 py-1">
               <li className="flex items-center gap-1.5">• 3~5일내 추심 금지명령 발령</li>
               <li className="flex items-center gap-1.5">• 주식/코인 투자 손실금 청산가치 최저 보장</li>
               <li className="flex items-center gap-1.5">• 자택/회사 등 우편 노출 안심, 대리 수령</li>
             </ul>
-            <div className="pt-2 border-t border-violet-100/50 text-[9.5px] text-violet-600 font-extrabold">
-              ★ 기각 및 불합격 판정 시 수임료 100% 환불제 적용
+            <div className="pt-2 border-t border-violet-100/50 text-[11.5px] sm:text-[12.6px] font-black text-violet-700 uppercase tracking-widest">
+              ★ 기각 시 수임료 100% 환불제 적용 ★
             </div>
           </div>
         </div>
@@ -597,13 +597,13 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
           >
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-2">
-                <span className={`text-[12px] sm:text-[13.2px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md ${
+                <span className={`text-[15.2px] sm:text-[16.7px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md ${
                   responses.occupation === 'no_income' ? 'bg-rose-200/60 text-rose-800' : 'bg-amber-200/60 text-amber-800'
                 }`}>
                   개인회생 요건 보완 필요성
                 </span>
               </div>
-              <div className={`text-xs sm:text-[13px] font-bold leading-relaxed ${
+              <div className={`text-[15.2px] sm:text-[16.5px] font-bold leading-relaxed ${
                 responses.occupation === 'no_income' ? 'text-rose-900/90' : 'text-amber-900/90'
               }`}>
                 {est.warningMsg}

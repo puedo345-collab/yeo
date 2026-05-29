@@ -43,9 +43,6 @@ export default function Footer({ onAdminClick }: FooterProps) {
               <p className="text-xs font-bold text-white tracking-wider">사업자등록번호: 610-06-65592</p>
               <p className="text-xs font-bold text-white tracking-wider">주소: 울산 남구 법대로14번길 18 1층</p>
             </div>
-            <p className="text-slate-600">
-              유의사항: 본 시뮬레이션 결과는 간이 진단 기준이며, 실제 변제액은 소득과 재산 실사 후 달라질 수 있습니다.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

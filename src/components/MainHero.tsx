@@ -34,7 +34,7 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-indigo-50/15 pt-12 sm:pt-16 md:pt-20 lg:pt-24 pb-20 md:pb-28 lg:pb-36">
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-indigo-50/15 pt-12 sm:pt-16 md:pt-20 lg:pt-24 pb-[72px] md:pb-[100px] lg:pb-[130px]">
       {/* Sophisticated Background Design: Subtle Grid Pattern, Ambient Glows & Light Beam */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a04_1px,transparent_1px),linear-gradient(to_bottom,#0f172a04_1px,transparent_1px)] bg-[size:16px_24px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent pointer-events-none" />
@@ -66,8 +66,8 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
           <h2 className="text-indigo-800 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase">
             울산에 사시는데 다른 지역에 맡기시려고요?
           </h2>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 leading-[1.12] whitespace-pre-line">
-            개인회생·파산 법무사
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-wide text-slate-900 leading-[1.12] whitespace-pre-line">
+            개인회생·개인파산
           </h1>
         </motion.div>
 
@@ -76,9 +76,9 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="mt-6 sm:mt-10 text-base sm:text-lg md:text-xl text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed px-2"
+          className="mt-6 sm:mt-10 text-sm sm:text-lg text-slate-500 max-w-2xl mx-auto font-bold leading-relaxed px-4"
         >
-          복잡한 절차 없이 1분만 시간내어 진단해 보세요.
+          울산지방법원 사건에 특화된 법무사가 있습니다.
         </motion.p>
 
         {/* Quick Highlight Cards */}
@@ -145,14 +145,27 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
               whileTap={{ scale: 0.98 }}
               key={idx}
               onClick={() => onStartSurvey(card.actionKey)}
-              className={`p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br ${card.color} border border-slate-200/45 shadow-3xs cursor-pointer transition-all duration-200 flex items-center ${card.subtitle ? 'sm:items-start' : 'sm:items-center'} gap-4 hover:shadow-sm relative group`}
+              className={`p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br ${card.color} border ${
+                idx === 0 ? 'border-blue-300 animate-gentle-glow' : 'border-slate-200/45'
+              } shadow-3xs cursor-pointer transition-all duration-200 flex items-center ${card.subtitle ? 'sm:items-start' : 'sm:items-center'} gap-4 hover:shadow-sm relative group`}
             >
               <div className="p-4 bg-white rounded-2xl shadow-3xs shrink-0 group-hover:scale-110 transition-transform">
                 {card.icon}
               </div>
               <div className="space-y-1 flex-1">
-                <h4 className="font-extrabold text-slate-800 text-[17.15px] sm:text-[19px] flex items-center justify-between w-full gap-1.5">
-                  <span className={idx === 0 ? "text-blue-700 font-black tracking-tight" : ""}>{card.title}</span>
+                <h4 className="font-extrabold text-slate-800 text-[17.15px] sm:text-[19px] flex items-center justify-between w-full gap-1.5 flex-wrap sm:flex-nowrap">
+                  <span className={`${idx === 0 ? "text-blue-800 font-black tracking-tight" : ""} inline-flex items-center gap-1.5 flex-wrap`}>
+                    {card.title}
+                    {idx === 0 && (
+                      <span className="inline-flex items-center gap-1.5 ml-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-black bg-blue-600 text-white shadow-3xs">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-100 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-100"></span>
+                        </span>
+                        <span>실시간 진단</span>
+                      </span>
+                    )}
+                  </span>
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-800 group-hover:translate-x-1 shrink-0 transition-all" />
                 </h4>
                 {card.subtitle && (
@@ -164,8 +177,8 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
         </div>
 
         {/* Subtle timer warning */}
-        <p className="mt-6 text-[13px] text-slate-400 font-medium tracking-wide">
-          ⏱️ 약 1분 소요, 총 5개 간편 문항으로 정밀 설계
+        <p className="mt-6 text-sm text-slate-500 font-bold tracking-wide">
+          본 시뮬레이션 결과는 간이 진단 기준이며, 실제 변제액은 소득과 재산 실사 후 달라질 수 있습니다.
         </p>
       </div>
     </section>

@@ -4,6 +4,9 @@ import { QUESTIONS } from '../data';
 import { SurveyResponses } from '../types';
 import { ShieldCheck, ChevronLeft, ArrowRight, User, Phone, CheckSquare, Calendar, HelpCircle, Lock, X } from 'lucide-react';
 
+// Shared global flag to prevent React 18 StrictMode double-rendering from race conditioning the popstate event
+let isProgrammaticBackInProgress = false;
+
 interface QualificationCheckProps {
   onComplete: (responses: SurveyResponses) => void;
   onCancel: () => void;
@@ -31,6 +34,53 @@ export default function QualificationCheck({ onComplete, onCancel, mode = 'gener
 
   const totalSteps = QUESTIONS.length;
   const progressPercent = Math.round((currentStep / totalSteps) * 100);
+
+  const currentStepRef = React.useRef(currentStep);
+  currentStepRef.current = currentStep;
+
+  const onCancelRef = React.useRef(onCancel);
+  onCancelRef.current = onCancel;
+
+  const wasPoppedRef = React.useRef(false);
+
+  // Synchronize browser history popstate to allow mobile swipe back / hardware back button step navigation
+  React.useEffect(() => {
+    // 1. On mount, push an initial survey block state to history
+    window.history.pushState({ inSurvey: true }, '');
+
+    const handlePopState = () => {
+      if (isProgrammaticBackInProgress) {
+        return;
+      }
+      // The back button was pressed, which popped our { inSurvey: true } state.
+      if (currentStepRef.current > 0) {
+        // Put the state back into the browser history so we can catch the next back button click
+        window.history.pushState({ inSurvey: true }, '');
+        setFormError('');
+        setCurrentStep((prev) => prev - 1);
+      } else {
+        // If they were on the first step, let the cancel flow happen, and mark as already popped by back button
+        wasPoppedRef.current = true;
+        onCancelRef.current();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      // Clean up the dummy history state ONLY if we weren't already popped by the back button
+      if (!wasPoppedRef.current) {
+        if (window.history.state && window.history.state.inSurvey) {
+          isProgrammaticBackInProgress = true;
+          window.history.back();
+          setTimeout(() => {
+            isProgrammaticBackInProgress = false;
+          }, 100);
+        }
+      }
+    };
+  }, []);
 
   const handleSingleSelect = (key: string, value: string) => {
     const updated = { ...answers, [key]: value };
@@ -197,6 +247,24 @@ export default function QualificationCheck({ onComplete, onCancel, mode = 'gener
                           const val = e.target.value.replace(/[^0-9]/g, '');
                           setAnswers(prev => ({ ...prev, monthlyIncome: val }));
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const incomeVal = answers.monthlyIncome?.trim() || '';
+                            if (!incomeVal || parseInt(incomeVal, 10) <= 0) {
+                              setFormError('실소득 금액을 입력해 주세요. (0만 원보다 큰 수치)');
+                              return;
+                            }
+                            if (parseInt(incomeVal, 10) > 10000) {
+                              setFormError('소득액이 비현실적으로 큽니다. 다시 확인해 주십시오.');
+                              return;
+                            }
+                            setFormError('');
+                            (e.target as HTMLInputElement).blur();
+                            if (currentStep < QUESTIONS.length - 1) {
+                              setCurrentStep((prev) => prev + 1);
+                            }
+                          }
+                        }}
                         className="w-36 text-center text-3xl font-black text-slate-800 bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2 px-1 focus:outline-none transition-all shadow-3xs"
                       />
                       <span className="text-xl font-extrabold text-slate-800">만 원</span>
@@ -282,6 +350,24 @@ export default function QualificationCheck({ onComplete, onCancel, mode = 'gener
                         onChange={(e) => {
                           const val = e.target.value.replace(/[^0-9]/g, '');
                           setAnswers(prev => ({ ...prev, debtAmount: val }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const debtVal = answers.debtAmount?.trim() || '';
+                            if (!debtVal || parseInt(debtVal, 10) <= 0) {
+                              setFormError('총 채무액을 입력해 주세요. (0만 원보다 큰 수치)');
+                              return;
+                            }
+                            if (parseInt(debtVal, 10) > 250000) {
+                              setFormError('개인회생 한도를 대폭 초과하는 채무액입니다. 회생담보 15억, 무담보 10억 한도 내에서 올바른 값을 입력해 주세요.');
+                              return;
+                            }
+                            setFormError('');
+                            (e.target as HTMLInputElement).blur();
+                            if (currentStep < QUESTIONS.length - 1) {
+                              setCurrentStep((prev) => prev + 1);
+                            }
+                          }
                         }}
                         className="w-36 text-center text-3xl font-black text-slate-800 bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2 px-1 focus:outline-none transition-all shadow-3xs"
                       />

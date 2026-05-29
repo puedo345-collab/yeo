@@ -63,6 +63,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [revealedPhones, setRevealedPhones] = useState<Record<string, boolean>>({});
   const [token, setToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"list" | "statistics">("list");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Change Password Modal States
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -91,6 +92,24 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [profileBase64, setProfileBase64] = useState("");
   const [imagesError, setImagesError] = useState("");
   const [imagesSuccess, setImagesSuccess] = useState("");
+
+  // Delete Confirmation and Custom Alert Modal States
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmType, setDeleteConfirmType] = useState<"single" | "bulk">("single");
+  const [singleDeleteId, setSingleDeleteId] = useState("");
+  const [singleDeleteName, setSingleDeleteName] = useState("");
+
+  const [customAlertOpen, setCustomAlertOpen] = useState(false);
+  const [customAlertTitle, setCustomAlertTitle] = useState("");
+  const [customAlertMessage, setCustomAlertMessage] = useState("");
+  const [customAlertStatus, setCustomAlertStatus] = useState<"success" | "error" | "warning">("success");
+
+  const showCustomAlert = (title: string, message: string, status: "success" | "error" | "warning" = "success") => {
+    setCustomAlertTitle(title);
+    setCustomAlertMessage(message);
+    setCustomAlertStatus(status);
+    setCustomAlertOpen(true);
+  };
 
   const handleOpenSolapiModal = async () => {
     setIsSolapiOpen(true);
@@ -258,32 +277,37 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       const resLogo = await fetch("/api/logo-image", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ image: logoBase64 })
       });
       if (!resLogo.ok) {
-        throw new Error("로고 업로드 중 서버 오류가 발생했습니다.");
+        throw new Error("로고 업로드 중 권한이 없거나 서버 오류가 발생했습니다.");
       }
 
       // Update profile image
       const resProfile = await fetch("/api/profile-image", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ image: profileBase64 })
       });
       if (!resProfile.ok) {
-        throw new Error("프로필 사진 업로드 중 서버 오류가 발생했습니다.");
+        throw new Error("프로필 사진 업로드 중 권한이 없거나 서버 오류가 발생했습니다.");
       }
 
       setImagesSuccess("로고 및 프로필 사진이 성공적으로 저장되었습니다!");
+      
+      // Dispatch custom events for live dynamic updates in Header and LawyerIntroduction components
+      window.dispatchEvent(new CustomEvent("logo-updated"));
+      window.dispatchEvent(new CustomEvent("profile-updated"));
+
       setTimeout(() => {
         setIsImagesOpen(false);
         setImagesSuccess("");
-        // Reload page to re-render in Header and LawyerIntroduction
-        window.location.reload();
       }, 1500);
 
     } catch (err: any) {
@@ -441,22 +465,34 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     }
   };
 
-  const handleDeleteSubmission = async (id: string, name: string) => {
-    if (!token) return;
-    if (!window.confirm(`[경고] ${name} 의뢰인의 무료 한도 자격 진단 데이터를 실시간 데이터베이스에서 완전히 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
-      return;
-    }
-    
+  const handleDeleteSubmissionClick = (id: string, name: string) => {
+    setSingleDeleteId(id);
+    setSingleDeleteName(name);
+    setDeleteConfirmType("single");
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteSubmissionExecute = async () => {
+    if (!token || !singleDeleteId) return;
     try {
-      const res = await fetch(`/api/submissions/${id}`, {
+      const res = await fetch(`/api/submissions/${singleDeleteId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
-        setSubmissions(prev => prev.filter(sub => sub.id !== id));
+        setSubmissions(prev => prev.filter(sub => sub.id !== singleDeleteId));
+        setSelectedIds(prev => prev.filter(selectedId => selectedId !== singleDeleteId));
+        showCustomAlert("성공", `${singleDeleteName || "의뢰인"} 정보가 성공적으로 영구 삭제되었습니다.`, "success");
+      } else {
+        showCustomAlert("오류", "의뢰인 정보 삭제 중 오류가 발생했습니다.", "error");
       }
     } catch (err) {
       console.error("Error deleting submission:", err);
+      showCustomAlert("오류", "서버 통신 중 에러가 발생했습니다.", "error");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setSingleDeleteId("");
+      setSingleDeleteName("");
     }
   };
 
@@ -596,6 +632,64 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     return matchesSearch && matchesStatus;
   });
 
+  // Selective deletion helpers
+  const toggleSelectSubmission = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllVisible = (checked: boolean) => {
+    if (checked) {
+      const visibleIds = filteredSubmissions.map(sub => sub.id);
+      setSelectedIds(prev => {
+        const union = new Set([...prev, ...visibleIds]);
+        return Array.from(union);
+      });
+    } else {
+      const visibleIds = filteredSubmissions.map(sub => sub.id);
+      setSelectedIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    }
+  };
+
+  const handleDeleteSelectedClick = () => {
+    if (!token) return;
+    if (selectedIds.length === 0) {
+      showCustomAlert("선택 대상 없음", "삭제할 대상을 먼저 하나 이상 선택해 주십시오.", "warning");
+      return;
+    }
+    setDeleteConfirmType("bulk");
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteSelectedExecute = async () => {
+    if (!token || selectedIds.length === 0) return;
+    try {
+      const res = await fetch("/api/submissions/bulk-delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+
+      if (res.ok) {
+        setSubmissions(prev => prev.filter(sub => !selectedIds.includes(sub.id)));
+        setSelectedIds([]);
+        showCustomAlert("성공", "선택 정보가 안전하게 일괄 영구 삭제되었습니다.", "success");
+      } else {
+        const errorData = await res.json();
+        showCustomAlert("오류", errorData.error || "일괄 삭제 도중 오류가 발생했습니다.", "error");
+      }
+    } catch (err) {
+      console.error("Error bulk deleting submissions:", err);
+      showCustomAlert("오류", "서버 통신 중 실패했습니다.", "error");
+    } finally {
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   // Calculate high level statistics for layout
   const totalInquiries = submissions.length;
   const inConsultation = submissions.filter(s => s.status === "상담중").length;
@@ -693,7 +787,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                     </span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-                    실시간 자격진단 고객 연동 DB
+                    간편 상담 신청 고객 DB
                   </h1>
                 </div>
 
@@ -822,6 +916,39 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                 </div>
               </div>
 
+              {/* Selective / Bulk Delete Bar */}
+              {submissions.length > 0 && !loading && (
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-4 shadow-3s flex flex-wrap items-center justify-between gap-3 text-slate-800">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="select-all-checkbox"
+                      checked={filteredSubmissions.length > 0 && filteredSubmissions.every(sub => selectedIds.includes(sub.id))}
+                      onChange={(e) => handleSelectAllVisible(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 transition-all cursor-pointer"
+                    />
+                    <label htmlFor="select-all-checkbox" className="text-xs text-slate-700 font-extrabold cursor-pointer select-none">
+                      현재 목록 전체 선택 ({filteredSubmissions.length}건 중 {filteredSubmissions.filter(s => selectedIds.includes(s.id)).length}건 선택됨)
+                    </label>
+                  </div>
+
+                  {selectedIds.length > 0 && (
+                    <div className="flex items-center gap-2.5 animate-fade-in">
+                      <span className="text-xs text-rose-600 font-black">
+                        총 {selectedIds.length}개 선택됨
+                      </span>
+                      <button
+                        onClick={handleDeleteSelectedClick}
+                        className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 font-bold rounded-xl text-xs flex items-center gap-1.5 border border-rose-200 transition-all cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        선택 삭제 (영구 제거)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Submissions List Container */}
               <div className="space-y-4">
                 {loading ? (
@@ -847,6 +974,12 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                         {/* Upper flex bar */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-5">
                           <div className="flex flex-wrap items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(sub.id)}
+                              onChange={() => toggleSelectSubmission(sub.id)}
+                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-200 transition-all cursor-pointer mr-0.5"
+                            />
                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-900 font-extrabold text-sm border border-slate-200/50">
                               <User className="w-5 h-5 text-slate-500" />
                             </div>
@@ -889,7 +1022,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                             </select>
                             
                             <button
-                              onClick={() => handleDeleteSubmission(sub.id, sub.name)}
+                              onClick={() => handleDeleteSubmissionClick(sub.id, sub.name)}
                               className="p-2.5 bg-rose-50/50 hover:bg-rose-50 text-rose-500 hover:text-rose-600 rounded-xl transition-all border border-rose-100/30 cursor-pointer"
                               title="삭제"
                             >
@@ -1589,6 +1722,132 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                             </button>
                           </div>
                         </form>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* Custom Delete Confirmation Modal */}
+              <AnimatePresence>
+                {deleteConfirmOpen && (
+                  <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setDeleteConfirmOpen(false)}
+                      className="absolute inset-0 bg-slate-950"
+                    />
+
+                    {/* Modal Content */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                      className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative z-10 border border-slate-100 overflow-hidden text-slate-900"
+                    >
+                      <div className="absolute top-0 inset-x-0 h-1.5 bg-rose-650 bg-rose-600" />
+                      
+                      <button
+                        onClick={() => setDeleteConfirmOpen(false)}
+                        className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+                        aria-label="닫기"
+                        type="button"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+
+                      <div className="space-y-4 pt-2">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto sm:mx-0">
+                          <Trash2 className="w-6 h-6" />
+                        </div>
+
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-black tracking-tight text-slate-900 text-center sm:text-left">
+                            {deleteConfirmType === "single" ? "의뢰인 정보 영구 삭제" : "선택한 의뢰인 정보 일괄 영구 삭제"}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-bold leading-relaxed text-center sm:text-left whitespace-pre-line">
+                            {deleteConfirmType === "single" 
+                              ? `[경고] "${singleDeleteName || "의뢰인"}" 님의 자격 진단 데이터를 실시간 데이터베이스에서 완전히 영구 삭제하시겠습니까?\n이 작업은 복구가 불가능합니다.`
+                              : `[경고] 선택된 의뢰인 총 ${selectedIds.length}명의 모든 데이터를 실시간 데이터베이스에서 영구 삭제하시겠습니까?\n이 작업은 복구가 불가능합니다.`}
+                          </p>
+                        </div>
+
+                        <div className="pt-3 flex gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmOpen(false)}
+                            className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer text-center"
+                          >
+                            취소
+                          </button>
+                          <button
+                            type="button"
+                            onClick={deleteConfirmType === "single" ? handleDeleteSubmissionExecute : handleDeleteSelectedExecute}
+                            className="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-xl text-xs shadow-md transition-colors cursor-pointer text-center"
+                          >
+                            영구 삭제 승인
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {/* Custom Alert Modal */}
+              <AnimatePresence>
+                {customAlertOpen && (
+                  <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.4 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setCustomAlertOpen(false)}
+                      className="absolute inset-0 bg-slate-950"
+                    />
+
+                    {/* Modal Content */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                      className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl relative z-10 border border-slate-100 overflow-hidden text-slate-900 text-center"
+                    >
+                      <div className={`absolute top-0 inset-x-0 h-1.5 ${
+                        customAlertStatus === "success" ? "bg-emerald-500" :
+                        customAlertStatus === "error" ? "bg-rose-500" : "bg-amber-500"
+                      }`} />
+
+                      <div className="space-y-4 pt-1">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${
+                          customAlertStatus === "success" ? "bg-emerald-50 text-emerald-600" :
+                          customAlertStatus === "error" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                        }`}>
+                          {customAlertStatus === "success" ? <CheckCircle className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="text-base font-black tracking-tight text-slate-900">
+                            {customAlertTitle}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                            {customAlertMessage}
+                          </p>
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setCustomAlertOpen(false)}
+                            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition-colors cursor-pointer text-center"
+                          >
+                            확인
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   </div>

@@ -9,18 +9,47 @@ interface HeaderProps {
 export default function Header({ onNavClick, onStartSurvey }: HeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [logoImg, setLogoImg] = useState<string | null>(null);
+  const headerRef = React.useRef<HTMLElement>(null);
 
   React.useEffect(() => {
-    // Load custom logo on mount
-    fetch('/api/logo-image')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.image) {
-          setLogoImg(data.image);
-        }
-      })
-      .catch((err) => console.error("Error loading logo:", err));
+    const loadLogo = () => {
+      fetch('/api/logo-image')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.image) {
+            setLogoImg(data.image);
+          } else {
+            setLogoImg(null);
+          }
+        })
+        .catch((err) => console.error("Error loading logo:", err));
+    };
+
+    loadLogo();
+
+    window.addEventListener("logo-updated", loadLogo);
+    return () => {
+      window.removeEventListener("logo-updated", loadLogo);
+    };
   }, []);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const navItems = [
     { id: 'brand', label: '법무사 소개' },
@@ -30,26 +59,18 @@ export default function Header({ onNavClick, onStartSurvey }: HeaderProps) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
+    <header ref={headerRef} className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo Brand area */}
-          <div className="flex items-center gap-3 select-none">
+          <div className="flex items-center gap-[7.2px] select-none">
             <div 
               id="header-logo-container"
               onClick={() => onNavClick('hero')}
-              className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer overflow-hidden ${
-                logoImg 
-                  ? 'bg-transparent border border-transparent' 
-                  : 'bg-slate-900 border border-slate-800 text-amber-400 shadow-sm'
-              }`}
+              className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer overflow-hidden bg-slate-900 border border-slate-800 text-amber-400 shadow-sm animate-fade-in"
             >
               {logoImg ? (
-                <img 
-                  src={logoImg} 
-                  alt="로고" 
-                  className="w-full h-full object-contain"
-                />
+                <img src={logoImg} alt="여환동 법률 로고" className="w-full h-full object-cover" />
               ) : (
                 <Scale className="w-5 h-5 stroke-[2.2]" />
               )}
@@ -59,7 +80,7 @@ export default function Header({ onNavClick, onStartSurvey }: HeaderProps) {
               className="flex flex-col cursor-pointer" 
               onClick={() => onNavClick('hero')}
             >
-              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 block leading-tight">
+              <span className="text-[19.8px] sm:text-[22px] font-black tracking-tight text-slate-900 block leading-tight">
                 법무사 여환동 사무소
               </span>
             </div>

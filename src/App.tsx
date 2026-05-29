@@ -413,22 +413,6 @@ export default function App() {
   };
 
   const handleSurveyComplete = (responses: SurveyResponses) => {
-    // Send to our real-time custom API database
-    fetch('/api/submissions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(responses)
-    })
-      .then(res => res.json())
-      .then(data => {
-        console.log('Real-time database submission synced:', data);
-      })
-      .catch(err => {
-        console.error('Error syncing real-time database:', err);
-      });
-
     setUserResponses(responses);
     setBrandPageActive(false);
     setAdminPageActive(false);
@@ -622,7 +606,7 @@ export default function App() {
 
         {/* Permanent Premium Guidelines and Stories (Scroll Trigger Point) */}
         {!surveyActive && !caseMatcherActive && !planSimulatorActive && !userResponses && !adminPageActive && !brandPageActive && (
-          <div ref={eligibilityRef} className="scroll-mt-16" id="brand">
+          <div ref={eligibilityRef} className="scroll-mt-8 md:scroll-mt-10" id="brand">
             <EligibilityNotes />
           </div>
         )}
@@ -732,6 +716,11 @@ export default function App() {
                         required
                         value={reservePhone}
                         onChange={(e) => setReservePhone(formatPhone(e.target.value))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.currentTarget as HTMLInputElement).blur();
+                          }
+                        }}
                         placeholder="010-1234-5678"
                         className={`w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden font-bold transition-all ${
                           reserveTab === 'phone' ? 'focus:border-emerald-500' : 'focus:border-[#FEE500]'
@@ -899,8 +888,8 @@ export default function App() {
           onClick={() => setConsultationOpen(prev => !prev)}
           className={`flex items-center gap-2 px-5 py-3.5 border rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 select-none font-bold group cursor-pointer ${
             isOverFooter
-              ? 'bg-amber-400 border-amber-300 text-slate-950 hover:bg-amber-350 hover:border-amber-200 shadow-[0_0_25px_rgba(251,191,36,0.25)]'
-              : 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800'
+              ? 'bg-amber-400 border-amber-300 text-slate-950 hover:bg-amber-350 hover:border-amber-200 shadow-[0_0_25px_rgba(251,191,36,0.25)] animate-luxury-pulse-amber'
+              : 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800 animate-luxury-pulse'
           }`}
           title="여환동 법무사 실시간 1:1 상담신청 예약"
         >

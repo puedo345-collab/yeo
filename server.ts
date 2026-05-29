@@ -114,11 +114,43 @@ function writeSubmissions(data: Submission[]) {
   }
 }
 
+// In-Memory Secure Session Map to prevent Reverse Base64 password decoding
+const secureSessions = new Map<string, { expiresAt: number }>();
+
+// Helper function to hash password with a secure salt
+function hashPassword(password: string, salt: string): string {
+  return crypto.createHmac("sha256", salt).update(password).digest("hex");
+}
+
+// Check input password against stored (salted hash or plaintext config)
+function verifyPassword(input: string, stored: string): boolean {
+  if (stored.startsWith("sha256:")) {
+    const parts = stored.split(":");
+    if (parts.length === 3) {
+      const [, salt, hash] = parts;
+      return hashPassword(input, salt) === hash;
+    }
+  }
+  return input === stored;
+}
+
+// XSS input sanitization to strip unsafe HTML markup
+function sanitizeInput(str: string): string {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
+}
+
 async function startServer() {
   const app = express();
 
-  // Parse JSON payloads
-  app.use(express.json());
+  // Limit JSON payloads to 10MB to prevent Server Resource DoS Attacks
+  app.use(express.json({ limit: "10mb" }));
 
   // Check admin password (supports dynamic file override or environment variable setup)
   const getAdminPassword = () => {
@@ -135,7 +167,7 @@ async function startServer() {
     return process.env.ADMIN_PASSWORD || "1234";
   };
 
-  // Helper middleware to verify token (basic Base64 authorization match)
+  // Helper middleware to verify token (using cryptographically secure session-lookup map)
   const verifyAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -144,15 +176,18 @@ async function startServer() {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    try {
-      const decoded = Buffer.from(token, "base64").toString("utf-8");
-      if (decoded === getAdminPassword()) {
-        next();
-      } else {
-        res.status(403).json({ error: "세션이 만료되었거나 권한이 맞지 않습니다." });
+    
+    // Lazy session expiration lookup (sessions expire after 2 hours)
+    const session = secureSessions.get(token);
+    if (session && session.expiresAt > Date.now()) {
+      // Touch session to renew active lifespan
+      session.expiresAt = Date.now() + 7200000;
+      next();
+    } else {
+      if (session) {
+        secureSessions.delete(token);
       }
-    } catch {
-      res.status(400).json({ error: "유효하지 않은 보안 토큰 방식입니다." });
+      res.status(403).json({ error: "세션이 만료되었거나 권한이 맞지 않습니다." });
     }
   };
 
@@ -355,10 +390,10 @@ async function startServer() {
     res.json({ image: null });
   });
 
-  // API: Update lawyer profile image
-  app.post("/api/profile-image", (req, res) => {
+  // API: Update lawyer profile image (Protected with verifyAdmin)
+  app.post("/api/profile-image", verifyAdmin, (req, res) => {
     const { image } = req.body;
-    if (!image || typeof image !== "string") {
+    if (image !== "" && (!image || typeof image !== "string")) {
       res.status(400).json({ error: "유효하지 않은 이미지 데이터입니다." });
       return;
     }
@@ -368,9 +403,13 @@ async function startServer() {
       if (fs.existsSync(ADMIN_CONFIG_PATH)) {
         configObj = JSON.parse(fs.readFileSync(ADMIN_CONFIG_PATH, "utf-8"));
       }
-      configObj.profileImage = image;
+      if (image === "") {
+        delete configObj.profileImage;
+      } else {
+        configObj.profileImage = image;
+      }
       fs.writeFileSync(ADMIN_CONFIG_PATH, JSON.stringify(configObj, null, 2), "utf-8");
-      res.json({ success: true, message: "프로필 이미지가 서버에 안전하게 등록되었습니다." });
+      res.json({ success: true, message: "프로필 이미지 설정이 완료되었습니다." });
     } catch (err) {
       console.error("[updateProfileImage] Error storing profile image:", err);
       res.status(500).json({ error: "프로필 이미지 저장 도중 오류가 발생했습니다." });
@@ -393,10 +432,10 @@ async function startServer() {
     res.json({ image: null });
   });
 
-  // API: Update custom logo image
-  app.post("/api/logo-image", (req, res) => {
+  // API: Update custom logo image (Protected with verifyAdmin)
+  app.post("/api/logo-image", verifyAdmin, (req, res) => {
     const { image } = req.body;
-    if (!image || typeof image !== "string") {
+    if (image !== "" && (!image || typeof image !== "string")) {
       res.status(400).json({ error: "유효하지 않은 로고 이미지 데이터입니다." });
       return;
     }
@@ -406,26 +445,33 @@ async function startServer() {
       if (fs.existsSync(ADMIN_CONFIG_PATH)) {
         configObj = JSON.parse(fs.readFileSync(ADMIN_CONFIG_PATH, "utf-8"));
       }
-      configObj.logoImage = image;
+      if (image === "") {
+        delete configObj.logoImage;
+      } else {
+        configObj.logoImage = image;
+      }
       fs.writeFileSync(ADMIN_CONFIG_PATH, JSON.stringify(configObj, null, 2), "utf-8");
-      res.json({ success: true, message: "로고 이미지가 서버에 안전하게 등록되었습니다." });
+      res.json({ success: true, message: "로고 이미지 설정이 완료되었습니다." });
     } catch (err) {
       console.error("[updateLogoImage] Error storing logo image:", err);
       res.status(500).json({ error: "로고 이미지 저장 도중 오류가 발생했습니다." });
     }
   });
 
-  // API: Auth / Verification
+  // API: Auth / Verification (Uses secure SHA-256 validation and returns random secure bearer token)
   app.post("/api/admin/verify", (req, res) => {
     const { password } = req.body;
-    if (String(password) === getAdminPassword()) {
-      res.json({ success: true, token: Buffer.from(getAdminPassword()).toString("base64") });
+    if (password && verifyPassword(String(password), getAdminPassword())) {
+      // Generate a brand new cryptographically secure random session token
+      const secureToken = crypto.randomBytes(32).toString("hex");
+      secureSessions.set(secureToken, { expiresAt: Date.now() + 7200000 }); // 2 hours expiration
+      res.json({ success: true, token: secureToken });
     } else {
       res.status(401).json({ success: false, message: "비밀번호가 일치하지 않습니다." });
     }
   });
 
-  // API: Change admin password (Protected)
+  // API: Change admin password (Protected - implements secure salted hashing)
   app.post("/api/admin/change-password", verifyAdmin, (req, res) => {
     const { newPassword } = req.body;
     if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 4) {
@@ -438,8 +484,14 @@ async function startServer() {
       if (fs.existsSync(ADMIN_CONFIG_PATH)) {
         configObj = JSON.parse(fs.readFileSync(ADMIN_CONFIG_PATH, "utf-8"));
       }
-      configObj.adminPassword = newPassword.trim();
+      const salt = crypto.randomBytes(16).toString("hex");
+      const hash = hashPassword(newPassword.trim(), salt);
+      configObj.adminPassword = `sha256:${salt}:${hash}`;
       fs.writeFileSync(ADMIN_CONFIG_PATH, JSON.stringify(configObj, null, 2), "utf-8");
+      
+      // Invalidate current sessions to force relogin
+      secureSessions.clear();
+      
       res.json({ success: true, message: "비밀번호가 안전하게 변경되었습니다. 다시 로그인 하십시오." });
     } catch (err) {
       console.error("[ChangePassword] Error storing new password configuration:", err);
@@ -456,24 +508,31 @@ async function startServer() {
         return;
       }
 
+      const isSimple = !!body.isSimpleConsultation;
+
+      if (!isSimple) {
+        // 실시간 자격진단 완료 시 관리자페이지 저장 및 SMS 전송 기능 제거 (사용자 요청)
+        res.status(200).json({ success: true, message: "실시간 자격진단 결과 전송 및 SMS 알림이 비활성화되었습니다." });
+        return;
+      }
+
       const list = readSubmissions();
       const newId = "sub_" + Math.random().toString(36).substr(2, 9);
-      const isSimple = !!body.isSimpleConsultation;
 
       const newSubmission: Submission = {
         id: newId,
-        name: body.name,
-        phone: body.phone,
-        occupation: isSimple ? "" : (body.occupation || "regular_employee"),
-        debtAmount: isSimple ? "" : (body.debtAmount || "30m_50m"),
-        monthlyIncome: isSimple ? undefined : body.monthlyIncome,
-        dependentsCount: isSimple ? undefined : body.dependentsCount,
-        hasMoreDebtThanAssets: isSimple ? "" : (body.hasMoreDebtThanAssets || "yes"),
-        region: isSimple ? "" : (body.region || "seoul_metropolitan"),
-        difficulties: body.difficulties || [],
-        ageGroup: isSimple ? "" : (body.ageGroup || "30대"),
+        name: sanitizeInput(body.name),
+        phone: sanitizeInput(body.phone),
+        occupation: isSimple ? "" : sanitizeInput(body.occupation || "regular_employee"),
+        debtAmount: isSimple ? "" : sanitizeInput(body.debtAmount || "30m_50m"),
+        monthlyIncome: isSimple ? undefined : sanitizeInput(body.monthlyIncome),
+        dependentsCount: isSimple ? undefined : sanitizeInput(body.dependentsCount),
+        hasMoreDebtThanAssets: isSimple ? "" : sanitizeInput(body.hasMoreDebtThanAssets || "yes"),
+        region: isSimple ? "" : sanitizeInput(body.region || "seoul_metropolitan"),
+        difficulties: Array.isArray(body.difficulties) ? body.difficulties.map((x: any) => sanitizeInput(String(x))) : [],
+        ageGroup: isSimple ? "" : sanitizeInput(body.ageGroup || "30대"),
         status: "신청완료",
-        counselorNotes: body.counselorNotes || "",
+        counselorNotes: sanitizeInput(body.counselorNotes || ""),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isSimpleConsultation: isSimple
@@ -525,8 +584,8 @@ async function startServer() {
 
     const updated = {
       ...list[index],
-      ...(status !== undefined && { status }),
-      ...(counselorNotes !== undefined && { counselorNotes }),
+      ...(status !== undefined && { status: sanitizeInput(status) as any }),
+      ...(counselorNotes !== undefined && { counselorNotes: sanitizeInput(counselorNotes) }),
       updatedAt: new Date().toISOString()
     };
 
@@ -549,6 +608,21 @@ async function startServer() {
 
     writeSubmissions(filtered);
     res.json({ success: true, message: "접수 내역이 안전하게 영구 삭제되었습니다." });
+  });
+
+  // API: Bulk Delete Submissions (Protected)
+  app.post("/api/submissions/bulk-delete", verifyAdmin, (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ error: "삭제할 대상 아이디 목록이 올바르지 않습니다." });
+      return;
+    }
+
+    const list = readSubmissions();
+    const filtered = list.filter(sub => !ids.includes(sub.id));
+
+    writeSubmissions(filtered);
+    res.json({ success: true, message: "선택한 의뢰인 정보들이 성공적으로 영구 일괄 삭제되었습니다." });
   });
 
   // Use Vite middleware for development
