@@ -10,10 +10,10 @@ export default function Footer({ onAdminClick }: FooterProps) {
 
   return (
     <footer id="main-footer" className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-7">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
         
         {/* Main Hotline and Core Anchors */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pb-6 border-b border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pb-8 border-b border-slate-800">
           <div className="space-y-1.5">
             <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               필요한 만큼, 꼭 필요한 방식으로
@@ -35,18 +35,8 @@ export default function Footer({ onAdminClick }: FooterProps) {
           </div>
         </div>
 
-        {/* Legal and Office Metadata */}
-        <div className="pt-1">
-          <div className="space-y-2 max-w-2xl">
-            <span className="text-xs font-bold text-white uppercase tracking-wider block">개인 정보 보호</span>
-            <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-              입력하신 정보는 자격 진단·상담 목적으로만 사용되며, 개인정보 보호법에 따라 안전하게 보호됩니다.
-            </p>
-          </div>
-        </div>
-
         {/* Corporate bottom row */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-6 border-t border-slate-800 text-[10px] sm:text-xs">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-[10px] sm:text-xs">
           <div className="space-y-1">
             <p className="text-xs font-bold text-white tracking-wider">상호: 법무사 여환동 사무소 | 대표 법무사 여환동</p>
             <div className="flex flex-col md:flex-row md:items-center md:gap-x-4 space-y-1 md:space-y-0">

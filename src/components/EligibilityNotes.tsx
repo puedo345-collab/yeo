@@ -14,9 +14,17 @@ export default function EligibilityNotes() {
         setActiveFaq(customEvent.detail.faqId);
       }
     };
+    const handleSetTab = (e: Event) => {
+      const customEvent = e as CustomEvent<{ tab: 'rehabilitation' | 'bankruptcy' }>;
+      if (customEvent.detail && customEvent.detail.tab) {
+        setActiveTab(customEvent.detail.tab);
+      }
+    };
     window.addEventListener('expand-faq', handleExpandFaq);
+    window.addEventListener('set-eligibility-tab', handleSetTab);
     return () => {
       window.removeEventListener('expand-faq', handleExpandFaq);
+      window.removeEventListener('set-eligibility-tab', handleSetTab);
     };
   }, []);
 
@@ -62,7 +70,7 @@ export default function EligibilityNotes() {
               {/* Eligibility Header Area */}
               <div className="text-center mb-8 md:mb-10 lg:mb-12">
                 <div className="space-y-4 sm:space-y-6">
-                  <span className="text-indigo-805 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase block">
+                  <span className="text-indigo-800 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase block">
                     개인회생 가이드
                   </span>
                   <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight px-1 text-center font-sans leading-[1.12]">
@@ -76,7 +84,7 @@ export default function EligibilityNotes() {
 
               {/* 3 Core Eligibility Rule cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-20 md:mb-28 lg:mb-32">
-                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[260px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[260px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-lg">
                     01
                   </div>
@@ -88,7 +96,7 @@ export default function EligibilityNotes() {
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[260px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[260px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center font-black text-lg">
                     02
                   </div>
@@ -100,7 +108,7 @@ export default function EligibilityNotes() {
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[260px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-slate-50/70 border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[260px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-lg">
                     03
                   </div>
@@ -124,7 +132,7 @@ export default function EligibilityNotes() {
                       신속 회생 절차 안내
                     </h2>
                   </div>
-                  <p className="mt-6 sm:mt-10 text-xs sm:text-sm md:text-base text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+                  <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
                     신속한 서류 편철과 완벽한 신청서 작성이 추심, 독촉 금지를 빨리 받아내는 핵심입니다.
                   </p>
                 </div>
@@ -271,9 +279,9 @@ export default function EligibilityNotes() {
               transition={{ duration: 0.2 }}
             >
               {/* Bankruptcy Header Area */}
-              <div className="text-center mb-12">
+              <div className="text-center mb-8 md:mb-10 lg:mb-12">
                 <div className="space-y-4 sm:space-y-6">
-                  <span className="text-emerald-700 font-extrabold text-sm tracking-widest uppercase block">
+                  <span className="text-emerald-700 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase block">
                     개인파산 가이드
                   </span>
                   <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight px-1 text-center font-sans leading-[1.12]">
@@ -287,7 +295,7 @@ export default function EligibilityNotes() {
 
               {/* 3 Core Bankruptcy Rule cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-20 md:mb-28 lg:mb-32">
-                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[280px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[280px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-lg">
                     01
                   </div>
@@ -299,7 +307,7 @@ export default function EligibilityNotes() {
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[280px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[280px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-lg">
                     02
                   </div>
@@ -311,7 +319,7 @@ export default function EligibilityNotes() {
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-between space-y-4 md:min-h-[280px] shadow-3xs">
+                <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-250 flex flex-col justify-start space-y-5 md:min-h-[280px] shadow-3xs">
                   <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-black text-lg">
                     03
                   </div>
@@ -326,10 +334,12 @@ export default function EligibilityNotes() {
 
               {/* Bankruptcy Step-by-Step Procedure Timeline */}
               <div className="border-t border-slate-200/50 pt-20 md:pt-28 mb-20 md:mb-28 lg:mb-32">
-                <div className="text-center space-y-3 mb-12">
-                  <span className="text-indigo-800 font-extrabold text-xs tracking-widest uppercase block">진행 단계</span>
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900">개인파산 & 면책 결정 과정</h3>
-                  <p className="text-xs sm:text-sm text-slate-400 font-semibold max-w-xl mx-auto">
+                <div className="text-center mb-8 md:mb-10 lg:mb-12">
+                  <div className="space-y-4 sm:space-y-6">
+                    <span className="text-indigo-800 font-extrabold text-sm sm:text-base md:text-xl tracking-wider uppercase block">진행 단계</span>
+                    <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인파산 & 면책 결정 과정</h3>
+                  </div>
+                  <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-xl mx-auto">
                     법무사 여환동 사무소와 함께 세세하고 빈틈없는 서명 소명을 통과하여 최종 면책 결정까지 진행되는 핵심 4단계 과정 안내입니다.
                   </p>
                 </div>
@@ -375,9 +385,9 @@ export default function EligibilityNotes() {
 
               {/* Cross Comparison Section: 회생 vs 파산 */}
               <div className="border-t border-slate-200/50 pt-20 max-w-4xl mx-auto">
-                <div className="text-center space-y-2 mb-8">
-                  <h4 className="text-xl sm:text-2xl font-black text-slate-900">개인회생 vs 개인파산 한눈에 비교</h4>
-                  <p className="text-xs text-slate-400 font-semibold">어떤 제도가 나에게 더 유리할까요? 명확하게 구분해 드립니다.</p>
+                <div className="text-center mb-8 md:mb-10 lg:mb-12">
+                  <h4 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight">개인회생 vs 개인파산 비교</h4>
+                  <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-xl mx-auto">어떤 제도가 나에게 더 유리할까요? 명확하게 구분해 드립니다.</p>
                 </div>
 
                 <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-3xs">
@@ -422,7 +432,7 @@ export default function EligibilityNotes() {
         <div id="faq" className="scroll-mt-24 md:scroll-mt-28 pt-20 md:pt-28 lg:pt-36 border-t border-slate-200/50">
           <div className="text-center">
             <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.12]">자주 묻는 질문</h3>
-            <p className="mt-6 sm:mt-10 text-xs sm:text-sm md:text-base text-slate-400 font-semibold max-w-2xl mx-auto leading-relaxed">의뢰인분들이 가장 궁금해하고 자주하는 질문을 모아봤습니다.</p>
+            <p className="mt-6 sm:mt-10 text-sm sm:text-base md:text-lg text-slate-400 font-semibold max-w-2xl mx-auto leading-relaxed">의뢰인분들이 가장 궁금해하고 자주하는 질문을 모아봤습니다.</p>
           </div>
 
           <div className="mt-12 sm:mt-16 max-w-3xl mx-auto space-y-4">

@@ -15,8 +15,8 @@ export const QUESTIONS = [
   },
   {
     id: 'monthlyIncome',
-    title: '실제 월 평균 소득 범위는 어떻게 되시나요?',
-    subtitle: '세후 실수령액 기준의 대략적인 월 평균 소득을 선택해 주세요.',
+    title: '실제 월 평균 소득은 어떻게 되시나요?',
+    subtitle: '세후 실수령액 기준의 월 평균 소득을 입력해 주세요.',
     options: [
       { value: 'under_150', label: '150만 원 미만' },
       { value: '150_200', label: '150만 원 ~ 200만 원' },
@@ -39,7 +39,7 @@ export const QUESTIONS = [
   {
     id: 'debtAmount',
     title: '총 채무액(신용·보증채무 등)은 얼마인가요?',
-    subtitle: '무담보채무 10억, 담보채무 15억 이하로서, 1천만원 이상 권장입니다.',
+    subtitle: '신용대출, 카드대금, 현금서비스, 보증 등을 포함한 총 채무액을 입력해 주세요.',
     options: [
       { value: 'under_10m', label: '1,000만 원 미만' },
       { value: '10m_30m', label: '1,000만 원 ~ 3,000만 원' },
@@ -56,16 +56,6 @@ export const QUESTIONS = [
       { value: 'yes', label: '네, 채무가 재산보다 훨씬 많습니다.' },
       { value: 'no', label: '아니오, 재산이 채무보다 더 많습니다.' },
       { value: 'similar', label: '잘 모르겠습니다 / 거의 비슷합니다.' }
-    ]
-  },
-  {
-    id: 'region',
-    title: '현재 거주하고 계시는 지역은 어디인가요?',
-    subtitle: '거주지역 관할 회생법원 성향에 따라 심사 기준이 다르게 결정됩니다.',
-    options: [
-      { value: 'seoul_metropolitan', label: '울산광역시 / 양산시' },
-      { value: 'metropolitan_city', label: '서울 / 광역시(부산, 대구, 대전, 광주, 세종)' },
-      { value: 'other_region', label: '그외 지역(강원, 충청, 전라, 경상 등)' }
     ]
   },
   {

@@ -187,7 +187,7 @@ async function startServer() {
         .update(date + salt)
         .digest("hex");
 
-      const authHeaderValue = `HMACS256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
+      const authHeaderValue = `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
 
       // Payload for single transmission
       const payload = {

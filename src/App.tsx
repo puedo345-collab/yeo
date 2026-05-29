@@ -251,6 +251,36 @@ export default function App() {
     };
   }, []);
 
+  const scrollWithLayoutSafety = (getTarget: () => HTMLElement | null, fallbackRef?: React.RefObject<HTMLDivElement | null>) => {
+    // 1. Immediate scroll attempt
+    const el = getTarget();
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (fallbackRef?.current) {
+      fallbackRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // 2. Mid-transition scroll correction (as transition is ongoing)
+    setTimeout(() => {
+      const elMid = getTarget();
+      if (elMid) {
+        elMid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (fallbackRef?.current) {
+        fallbackRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+
+    // 3. Post-transition final adjustment (after exit transitions complete)
+    setTimeout(() => {
+      const elFinal = getTarget();
+      if (elFinal) {
+        elFinal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (fallbackRef?.current) {
+        fallbackRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 450);
+  };
+
   const handleNavClick = (sectionId: string) => {
     if (sectionId === 'hero') {
       setSurveyActive(false);
@@ -276,8 +306,26 @@ export default function App() {
       setUserResponses(null);
       setAdminPageActive(false);
       setTimeout(() => {
-        eligibilityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
+        window.dispatchEvent(new CustomEvent('set-eligibility-tab', { detail: { tab: 'rehabilitation' } }));
+      }, 50);
+      scrollWithLayoutSafety(
+        () => document.getElementById('brand'),
+        eligibilityRef
+      );
+    } else if (sectionId === 'bankruptcy') {
+      setBrandPageActive(false);
+      setSurveyActive(false);
+      setCaseMatcherActive(false);
+      setPlanSimulatorActive(false);
+      setUserResponses(null);
+      setAdminPageActive(false);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('set-eligibility-tab', { detail: { tab: 'bankruptcy' } }));
+      }, 50);
+      scrollWithLayoutSafety(
+        () => document.getElementById('brand'),
+        eligibilityRef
+      );
     } else if (sectionId === 'our-spirit') {
       setBrandPageActive(false);
       setSurveyActive(false);
@@ -285,14 +333,10 @@ export default function App() {
       setPlanSimulatorActive(false);
       setUserResponses(null);
       setAdminPageActive(false);
-      setTimeout(() => {
-        const el = document.getElementById('our-spirit');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          eligibilityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 80);
+      scrollWithLayoutSafety(
+        () => document.getElementById('our-spirit') || document.getElementById('brand'),
+        eligibilityRef
+      );
     } else if (sectionId === 'faq') {
       setBrandPageActive(false);
       setSurveyActive(false);
@@ -300,12 +344,10 @@ export default function App() {
       setPlanSimulatorActive(false);
       setUserResponses(null);
       setAdminPageActive(false);
-      setTimeout(() => {
-        const faqEl = document.getElementById('faq');
-        if (faqEl) {
-          faqEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 80);
+      scrollWithLayoutSafety(
+        () => document.getElementById('faq') || document.getElementById('brand'),
+        eligibilityRef
+      );
     } else if (sectionId === 'admin') {
       setAdminPageActive(true);
       setBrandPageActive(false);
@@ -454,7 +496,31 @@ export default function App() {
                 className="w-full"
               >
                 <LawyerIntroduction
-                  onBack={() => setBrandPageActive(false)}
+                  onBack={() => {
+                    setBrandPageActive(false);
+                    const forceScrollTop = () => {
+                      window.scrollTo(0, 0);
+                      document.documentElement.scrollTop = 0;
+                      document.body.scrollTop = 0;
+                      
+                      const mainWrap = document.getElementById('main-landing-wrap');
+                      if (mainWrap) {
+                        mainWrap.scrollTop = 0;
+                      }
+                      const mainStage = document.getElementById('landing-main-stage');
+                      if (mainStage) {
+                        mainStage.scrollTop = 0;
+                      }
+                    };
+                    
+                    // Immediate scroll
+                    forceScrollTop();
+                    
+                    // Staggered scrolls to guarantee resetting on mobile browsers
+                    setTimeout(forceScrollTop, 30);
+                    setTimeout(forceScrollTop, 100);
+                    setTimeout(forceScrollTop, 250);
+                  }}
                   onStartSurvey={() => handleStartSurvey('general')}
                 />
               </motion.div>
@@ -612,7 +678,7 @@ export default function App() {
                     <p className="text-xs text-slate-500 font-semibold leading-relaxed">
                       지정하신 시간에 대표 법무사가 남겨주신 연락처로 정성을 다하여 연락드리겠습니다.
                     </p>
-                    <div className="pt-4 pb-1 flex flex-col gap-2">
+                    <div className="pt-4 pb-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -623,14 +689,6 @@ export default function App() {
                       >
                         확인
                       </button>
-                      <a
-                        href={kakaoChannelUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 px-4.5 py-2.5 bg-[#FEE500] hover:bg-[#FDD835] text-slate-900 rounded-xl text-xs font-black shadow-xs transition-colors cursor-pointer"
-                      >
-                        💬 카카오톡 대표 채널 직접 연결하기
-                      </a>
                     </div>
                   </div>
                 </div>

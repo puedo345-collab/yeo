@@ -486,6 +486,16 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   };
 
   const formatDebtAmount = (id: string) => {
+    if (!id) return "미기재";
+    const numericVal = parseInt(id, 10);
+    if (!isNaN(numericVal)) {
+      if (numericVal >= 10000) {
+        const eok = Math.floor(numericVal / 10000);
+        const man = numericVal % 10000;
+        return `${eok}억 ${man > 0 ? man.toLocaleString() + '만' : ''} 원`;
+      }
+      return `${numericVal.toLocaleString()}만 원`;
+    }
     switch (id) {
       case "under_10m": return "1천만 원 미만";
       case "10m_30m": return "1천만 원 ~ 3천만 원";
@@ -498,6 +508,10 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   const formatIncomeRange = (id?: string) => {
     if (!id) return "미기재 (직종환산)";
+    const numericVal = parseInt(id, 10);
+    if (!isNaN(numericVal)) {
+      return `월 ${numericVal.toLocaleString()}만 원`;
+    }
     switch (id) {
       case "under_150": return "150만 원 미만";
       case "150_200": return "150만 원 ~ 200만 원";
@@ -509,6 +523,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   };
 
   const formatRegion = (key: string) => {
+    if (!key) return "미기재";
     switch (key) {
       case "seoul_metropolitan": return "서울 / 경기 / 인천";
       case "busan_gyeongnam": return "울산 / 부산 / 경남 (전담구역)";

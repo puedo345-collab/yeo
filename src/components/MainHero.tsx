@@ -11,14 +11,8 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
   // Config for the 2 interactive entry cards (combined from 3 original cards)
   const entranceCards = [
     {
-      title: '개인회생 신청자격 확인',
-      subtitle: (
-        <span className="flex items-center flex-wrap gap-1.5">
-          탕감 비율 <span className="text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded-md font-black text-xs inline-flex items-center shadow-3xs">
-            1분 진단 하기
-          </span>
-        </span>
-      ),
+      title: '탕감 금액 즉시 확인하기',
+      subtitle: '',
       icon: <ClipboardCheck className="w-8 h-8 text-blue-700" />,
       color: 'from-blue-500/15 to-violet-500/10 hover:border-blue-400',
       actionKey: 'qualification'
@@ -40,7 +34,7 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-indigo-50/15 pt-24 md:pt-32 lg:pt-40 pb-20 md:pb-28 lg:pb-36">
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-indigo-50/15 pt-12 sm:pt-16 md:pt-20 lg:pt-24 pb-20 md:pb-28 lg:pb-36">
       {/* Sophisticated Background Design: Subtle Grid Pattern, Ambient Glows & Light Beam */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a04_1px,transparent_1px),linear-gradient(to_bottom,#0f172a04_1px,transparent_1px)] bg-[size:16px_24px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_40%,#000_70%,transparent_100%)] pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[1px] bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent pointer-events-none" />
@@ -134,7 +128,7 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
               1분만 투자해 보세요!
             </span>
             <h3 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight px-2 leading-[1.12]">
-              개인회생 신청자격 조회
+              나의 탕감 금액은?
             </h3>
           </div>
           <p className="mt-6 sm:mt-10 text-sm sm:text-lg text-slate-500 font-bold max-w-2xl mx-auto leading-relaxed px-4">
@@ -151,17 +145,19 @@ export default function MainHero({ onStartSurvey, onWorryChipClick }: MainHeroPr
               whileTap={{ scale: 0.98 }}
               key={idx}
               onClick={() => onStartSurvey(card.actionKey)}
-              className={`p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br ${card.color} border border-slate-200/45 shadow-3xs cursor-pointer transition-all duration-200 flex items-center sm:items-start gap-4 hover:shadow-sm relative group`}
+              className={`p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br ${card.color} border border-slate-200/45 shadow-3xs cursor-pointer transition-all duration-200 flex items-center ${card.subtitle ? 'sm:items-start' : 'sm:items-center'} gap-4 hover:shadow-sm relative group`}
             >
               <div className="p-4 bg-white rounded-2xl shadow-3xs shrink-0 group-hover:scale-110 transition-transform">
                 {card.icon}
               </div>
               <div className="space-y-1 flex-1">
                 <h4 className="font-extrabold text-slate-800 text-[17.15px] sm:text-[19px] flex items-center justify-between w-full gap-1.5">
-                  <span>{card.title}</span>
+                  <span className={idx === 0 ? "text-blue-700 font-black tracking-tight" : ""}>{card.title}</span>
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-800 group-hover:translate-x-1 shrink-0 transition-all" />
                 </h4>
-                <p className="text-sm text-slate-500 font-bold leading-normal">{card.subtitle}</p>
+                {card.subtitle && (
+                  <p className="text-sm text-slate-500 font-bold leading-normal">{card.subtitle}</p>
+                )}
               </div>
             </motion.div>
           ))}

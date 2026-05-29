@@ -13,6 +13,7 @@ interface ResultDashboardProps {
 export default function ResultDashboard({ responses, onRestart, onGoToMain }: ResultDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [stepMsg, setStepMsg] = useState('가입 심사 데이터 확인 중...');
+  const [repaymentMethodTab, setRepaymentMethodTab] = useState<'shorter' | 'equal'>('shorter');
 
   useEffect(() => {
     // Elegant Multi-stage analytic loaders
@@ -43,51 +44,72 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
     let mockTotalDebt = 48000000;
     let originalDebtStr = '4,800만 원';
     
-    switch (responses.debtAmount) {
-      case 'under_10m':
-        mockTotalDebt = 8500000;
-        originalDebtStr = '850만 원';
-        break;
-      case '10m_30m':
-        mockTotalDebt = 22000000;
-        originalDebtStr = '2,200만 원';
-        break;
-      case '30m_50m':
-        mockTotalDebt = 44000000;
-        originalDebtStr = '4,400만 원';
-        break;
-      case '50m_100m':
-        mockTotalDebt = 78000000;
-        originalDebtStr = '7,800만 원';
-        break;
-      case 'over_100m':
-        mockTotalDebt = 145000000;
-        originalDebtStr = '1억 4,500만 원';
-        break;
+    if (responses.debtAmount) {
+      const numericVal = parseInt(responses.debtAmount, 10);
+      if (!isNaN(numericVal)) {
+        mockTotalDebt = numericVal * 10000;
+        const num = mockTotalDebt;
+        if (num >= 100000000) {
+          const eok = Math.floor(num / 100000000);
+          const man = Math.round((num % 100000000) / 10000);
+          originalDebtStr = `${eok}억 ${man > 0 ? man.toLocaleString() + '만' : ''} 원`;
+        } else {
+          originalDebtStr = `${Math.round(num / 10000).toLocaleString()}만 원`;
+        }
+      } else {
+        switch (responses.debtAmount) {
+          case 'under_10m':
+            mockTotalDebt = 8500000;
+            originalDebtStr = '850만 원';
+            break;
+          case '10m_30m':
+            mockTotalDebt = 22000000;
+            originalDebtStr = '2,200만 원';
+            break;
+          case '30m_50m':
+            mockTotalDebt = 44000000;
+            originalDebtStr = '4,400만 원';
+            break;
+          case '50m_100m':
+            mockTotalDebt = 78000000;
+            originalDebtStr = '7,800만 원';
+            break;
+          case 'over_100m':
+            mockTotalDebt = 145000000;
+            originalDebtStr = '1억 4,500만 원';
+            break;
+        }
+      }
     }
 
     // --- 2026 Minimum Cost of Living Calculation Integration ---
-    // 1. Determine monthly income based on selected range or fallbacks
+    // 1. Determine monthly income based on selected range, numeric input, or fallbacks
     let estimatedIncome = 2500000;
     if (responses.monthlyIncome) {
-      switch (responses.monthlyIncome) {
-        case 'under_150':
-          estimatedIncome = 1300000;
-          break;
-        case '150_200':
-          estimatedIncome = 1750000;
-          break;
-        case '200_300':
-          estimatedIncome = 2500000;
-          break;
-        case '300_400':
-          estimatedIncome = 3500000;
-          break;
-        case 'over_400':
-          estimatedIncome = 4500000;
-          break;
-        default:
-          estimatedIncome = 2500000;
+      const numericVal = parseInt(responses.monthlyIncome, 10);
+      if (!isNaN(numericVal)) {
+        // User entered custom numeric value in 'man-won' units (e.g., 250 -> 2,500,000)
+        estimatedIncome = numericVal * 10000;
+      } else {
+        switch (responses.monthlyIncome) {
+          case 'under_150':
+            estimatedIncome = 1300000;
+            break;
+          case '150_200':
+            estimatedIncome = 1750000;
+            break;
+          case '200_300':
+            estimatedIncome = 2500000;
+            break;
+          case '300_400':
+            estimatedIncome = 3500000;
+            break;
+          case 'over_400':
+            estimatedIncome = 4500000;
+            break;
+          default:
+            estimatedIncome = 2500000;
+        }
       }
     } else {
       switch (responses.occupation) {
@@ -223,7 +245,7 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
     }
 
     // Debt range hard block check
-    if (responses.debtAmount === 'under_10m') {
+    if (responses.debtAmount === 'under_10m' || mockTotalDebt < 10000000) {
       reductionRate = 0;
       warningMsg = '※ 주의: 총 채무금액이 1,000만 원 미만인 경우, 전형적인 개인회생 자격 미달에 속해 비용 대비 실익이 낮을 수 있습니다. 신용회복위원회의 프리워크아웃이나 개인워크아웃 절차가 보다 효율적일 수 있으니, 무리한 진행 전 자매 프로그램 연동 무상 컨설팅을 꼭 점검받으십시오.';
       eligibilityGrade = '보류 (진단 경고)';
@@ -237,7 +259,21 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
       reductionRate = Math.max(10, Math.min(90, reductionRate));
     }
 
-    const mockReducedDebt = Math.round(mockTotalDebt * (1 - reductionRate / 100));
+    const isHardBlocked = (responses.occupation === 'no_income') || 
+                           (responses.hasMoreDebtThanAssets === 'no') || 
+                           (responses.debtAmount === 'under_10m' || mockTotalDebt < 10000000);
+
+    const isFullRepayment = !isHardBlocked && (mockTotalDebt <= availableRepayment * 36);
+
+    if (isFullRepayment) {
+      reductionRate = 0;
+      eligibilityGrade = '우수 (100% 변제 우량형)';
+      progressColor = 'bg-emerald-500';
+      textColor = 'text-emerald-700';
+      ringColor = 'ring-emerald-100';
+    }
+
+    const mockReducedDebt = isFullRepayment ? mockTotalDebt : Math.round(mockTotalDebt * (1 - reductionRate / 100));
     const mockMonthlyPayment = Math.round(mockReducedDebt / 36);
 
     const formatWon = (num: number) => {
@@ -249,19 +285,30 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
       return `${Math.round(num / 10000).toLocaleString()}만 원`;
     };
 
+    const method1Term = isFullRepayment ? Math.max(1, Math.min(36, Math.ceil(mockTotalDebt / availableRepayment))) : 36;
+    const method1MonthlyPayment = isFullRepayment ? Math.ceil(mockTotalDebt / method1Term) : mockMonthlyPayment;
+
+    const method2Term = 36;
+    const method2MonthlyPayment = isFullRepayment ? Math.ceil(mockTotalDebt / 36) : mockMonthlyPayment;
+
     return {
       originalDebtStr,
       mockTotalDebt,
       reductionRate,
       mockReducedDebt,
       reducedDebtStr: formatWon(mockReducedDebt),
-      savingsDebtStr: formatWon(mockTotalDebt - mockReducedDebt),
+      savingsDebtStr: isFullRepayment ? '0원' : formatWon(mockTotalDebt - mockReducedDebt),
       monthlyPaymentStr: formatWon(mockMonthlyPayment),
       warningMsg,
       eligibilityGrade,
       progressColor,
       textColor,
-      ringColor
+      ringColor,
+      isFullRepayment,
+      method1Term,
+      method2Term,
+      method1MonthlyPaymentStr: formatWon(method1MonthlyPayment),
+      method2MonthlyPaymentStr: formatWon(method2MonthlyPayment)
     };
   };
 
@@ -379,15 +426,19 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
                     className="stroke-emerald-500 transition-all duration-1000 ease-out"
                     strokeWidth="10"
                     strokeDasharray={2 * Math.PI * 52}
-                    strokeDashoffset={2 * Math.PI * 52 * (1 - est.reductionRate / 100)}
+                    strokeDashoffset={2 * Math.PI * 52 * (1 - (est.isFullRepayment ? 100 : est.reductionRate) / 100)}
                     strokeLinecap="round"
                     fill="transparent"
                   />
                 </svg>
                 {/* Text centered inside circular progress */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">{est.reductionRate}%</span>
-                  <span className="text-[9px] font-black text-slate-400 tracking-wider uppercase mt-1">예상 탕감율</span>
+                  <span className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
+                    {est.isFullRepayment ? "100%" : `${est.reductionRate}%`}
+                  </span>
+                  <span className="text-[9px] font-black text-slate-400 tracking-wider uppercase mt-1">
+                    {est.isFullRepayment ? "원금 변제율" : "예상 탕감율"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -410,6 +461,8 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
                   <span>회생 완료 후 최종 변제액</span>
                   {est.reductionRate > 0 ? (
                     <span className="font-extrabold text-emerald-700 text-right">약 {est.reducedDebtStr} (이자 전액 탕감)</span>
+                  ) : est.isFullRepayment ? (
+                    <span className="font-extrabold text-emerald-700 text-right">약 {est.reducedDebtStr} (장래이자는 100% 탕감)</span>
                   ) : (
                     <span className="font-extrabold text-amber-700 uppercase">상담을 통한 특별 보정 필요</span>
                   )}
@@ -417,41 +470,116 @@ export default function ResultDashboard({ responses, onRestart, onGoToMain }: Re
                 <div className="w-full bg-slate-200 h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                    style={{ width: `${Math.max(10, 100 - est.reductionRate)}%` }}
+                    style={{ width: `${Math.max(10, est.isFullRepayment ? 100 : (100 - est.reductionRate))}%` }}
                   />
                 </div>
               </div>
 
               {/* Bullet savings block optimized for mobile stacking */}
-              {est.reductionRate > 0 && (
+              {est.reductionRate > 0 ? (
                 <div className="p-3 bg-emerald-100/35 rounded-xl border border-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] sm:text-xs">
                   <span className="font-black text-emerald-900">법적으로 즉시 탕감 소멸되는 빚:</span>
                   <span className="font-black text-emerald-600">총 약 {est.savingsDebtStr} (탕감 완료)</span>
                 </div>
-              )}
+              ) : est.isFullRepayment ? (
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[11px] sm:text-xs text-left">
+                  <span className="font-black text-amber-950 shrink-0">💡 원금 100% 변제 조건:</span>
+                  <span className="font-bold text-amber-800 leading-normal">36개월 기간이 남는 경우 채무 연체이자도 전액 변제해야할 가능성이 있습니다.</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
 
         {/* Highlighted Monthly Plan Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 sm:p-5 rounded-2xl border border-slate-100 bg-gradient-to-b from-white to-slate-50/50 space-y-2">
-            <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest block">36개월 월 예상 변제금</span>
-            <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
-              {est.reductionRate > 0 ? `월 약 ${est.monthlyPaymentStr}` : '별도 상담 요망'}
-            </p>
-            <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
-              ※ 개인회생을 통해 본인이 매월 부담해야 하는 변제 금액 (2026년 최저생계비 기준 적용 시뮬레이션)
-            </p>
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-100 bg-gradient-to-b from-white to-slate-50/50 space-y-3 flex flex-col justify-between">
+            {est.isFullRepayment ? (
+              <div className="space-y-3 font-sans w-full">
+                {/* Method selector tabs/segmented control */}
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setRepaymentMethodTab('shorter')}
+                    className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
+                      repaymentMethodTab === 'shorter'
+                        ? 'bg-white text-slate-800 shadow-3xs'
+                        : 'text-slate-400 hover:text-slate-650'
+                    }`}
+                  >
+                    방법 ① 단기 변제
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRepaymentMethodTab('equal')}
+                    className={`flex-1 py-1.5 text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
+                      repaymentMethodTab === 'equal'
+                        ? 'bg-white text-slate-800 shadow-3xs'
+                        : 'text-slate-400 hover:text-slate-650'
+                    }`}
+                  >
+                    방법 ② 36개월 분할
+                  </button>
+                </div>
+
+                {/* Display plan details based on selected tab */}
+                {repaymentMethodTab === 'shorter' ? (
+                  <div className="space-y-1.5 animate-fade-in text-left">
+                    <span className="text-[10px] sm:text-[11px] font-black text-blue-600 uppercase tracking-widest block">
+                      방법 1: 소득 기준 집중 변제형
+                    </span>
+                    <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
+                      월 {est.method1MonthlyPaymentStr}
+                    </p>
+                    <span className="text-xs text-blue-700 font-extrabold bg-blue-50 px-2 py-0.5 rounded border border-blue-100 inline-block">
+                      총 {est.method1Term}개월 상환 (조기 종결)
+                    </span>
+                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-1">
+                      ※ 월 소득에서 최저생계비를 차감한 가용소득 전체를 투입하여, 36개월보다 짧은 기간 내에 종결하는 플랜입니다.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 animate-fade-in text-left">
+                    <span className="text-[10px] sm:text-[11px] font-black text-emerald-600 uppercase tracking-widest block">
+                      방법 2: 36개월 정기 균등형
+                    </span>
+                    <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
+                      월 {est.method2MonthlyPaymentStr}
+                    </p>
+                    <span className="text-xs text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 inline-block">
+                      총 36개월 분기 상환 (지출 완화)
+                    </span>
+                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-1">
+                      ※ 총 부채 원금을 36개월간 균등 배분하여 월 부담액을 최소 수준으로 변제하는 플랜입니다.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest block">
+                  36개월 월 예상 변제금
+                </span>
+                <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">
+                  {est.reductionRate > 0 ? `월 약 ${est.monthlyPaymentStr}` : '별도 상담 요망'}
+                </p>
+                <p className="text-[10px] text-slate-400 font-bold leading-relaxed pt-2">
+                  ※ 개인회생을 통해 본인이 매월 부담해야 하는 변제 금액 (2026년 최저생계비 기준 적용 시뮬레이션)
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="p-4 sm:p-5 rounded-2xl border border-violet-100 bg-violet-50/30 space-y-2">
+          <div className="p-4 sm:p-5 rounded-2xl border border-violet-100 bg-violet-50/30 space-y-2 flex flex-col justify-between">
             <span className="text-[10px] sm:text-[11px] font-black text-violet-700 uppercase tracking-widest block">법무사 여환동의 안심 케어</span>
-            <ul className="text-[11px] text-slate-700 font-bold space-y-1">
+            <ul className="text-[11px] text-slate-700 font-bold space-y-2 py-1">
               <li className="flex items-center gap-1.5">• 3~5일내 추심 금지명령 발령</li>
               <li className="flex items-center gap-1.5">• 주식/코인 투자 손실금 청산가치 최저 보장</li>
               <li className="flex items-center gap-1.5">• 자택/회사 등 우편 노출 안심, 대리 수령</li>
             </ul>
+            <div className="pt-2 border-t border-violet-100/50 text-[9.5px] text-violet-600 font-extrabold">
+              ★ 기각 및 불합격 판정 시 수임료 100% 환불제 적용
+            </div>
           </div>
         </div>
 

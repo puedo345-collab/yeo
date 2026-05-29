@@ -181,8 +181,185 @@ export default function QualificationCheck({ onComplete, onCancel, mode = 'gener
                 </p>
               </div>
 
-              {/* Multiple Options Choice list */}
-              {QUESTIONS[currentStep].id !== 'difficulties' ? (
+              {/* Custom Input or Multiple Options Choice list */}
+              {QUESTIONS[currentStep].id === 'monthlyIncome' ? (
+                // Custom numeric input for income step
+                <div className="space-y-4 pt-1 text-left">
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center space-y-3 font-sans">
+                    <span className="text-sm text-slate-400 font-extrabold">회사원은 수령액, 사업자는 소득(매출X)</span>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <input
+                        type="tel"
+                        pattern="[0-9]*"
+                        placeholder="예: 250"
+                        value={answers.monthlyIncome || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setAnswers(prev => ({ ...prev, monthlyIncome: val }));
+                        }}
+                        className="w-36 text-center text-3xl font-black text-slate-800 bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2 px-1 focus:outline-none transition-all shadow-3xs"
+                      />
+                      <span className="text-xl font-extrabold text-slate-800">만 원</span>
+                    </div>
+                    {answers.monthlyIncome && (
+                      <span className="text-xs text-blue-600 font-extrabold bg-blue-50/50 px-2.5 py-1 rounded-lg border border-blue-100">
+                        실제 입력 소득: {(() => {
+                          const val = parseInt(answers.monthlyIncome, 10);
+                          if (isNaN(val) || val <= 0) return '';
+                          return `${val.toLocaleString()}만 원`;
+                        })()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick increment buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: '+10만', val: 10 },
+                      { label: '+50만', val: 50 },
+                      { label: '+100만', val: 100 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.label}
+                        type="button"
+                        onClick={() => {
+                          const curr = parseInt(answers.monthlyIncome || '0', 10) || 0;
+                          setAnswers(prev => ({ ...prev, monthlyIncome: String(curr + btn.val) }));
+                        }}
+                        className="py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs active:scale-[0.98] transition-all cursor-pointer bg-white shadow-3xs"
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setAnswers(prev => ({ ...prev, monthlyIncome: '' }))}
+                      className="py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-extrabold text-xs active:scale-[0.98] transition-all cursor-pointer bg-white shadow-3xs"
+                    >
+                      초기화
+                    </button>
+                  </div>
+
+                  {/* Manual trigger next button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const incomeVal = answers.monthlyIncome?.trim() || '';
+                        if (!incomeVal || parseInt(incomeVal, 10) <= 0) {
+                          setFormError('실소득 금액을 입력해 주세요. (0만 원보다 큰 수치)');
+                          return;
+                        }
+                        if (parseInt(incomeVal, 10) > 10000) {
+                          setFormError('소득액이 비현실적으로 큽니다. 다시 확인해 주십시오.');
+                          return;
+                        }
+                        setFormError('');
+                        
+                        // Proceed to next step
+                        if (currentStep < QUESTIONS.length - 1) {
+                          setCurrentStep((prev) => prev + 1);
+                        }
+                      }}
+                      className="w-full py-4.5 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-black text-sm tracking-wide shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.99]"
+                    >
+                      <span>확인 및 다음 단계로</span>
+                      <ArrowRight className="w-4 h-4 text-slate-300" />
+                    </button>
+                  </div>
+                </div>
+              ) : QUESTIONS[currentStep].id === 'debtAmount' ? (
+                // Custom numeric input for debt step
+                <div className="space-y-4 pt-1 text-left">
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center space-y-3 font-sans">
+                    <span className="text-sm text-slate-400 font-extrabold">신용, 카드대금, 대출, 보증 포함 총 금액</span>
+                    <div className="flex items-center gap-1.5 justify-center font-sans">
+                      <input
+                        type="tel"
+                        pattern="[0-9]*"
+                        placeholder="예: 3500"
+                        value={answers.debtAmount || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setAnswers(prev => ({ ...prev, debtAmount: val }));
+                        }}
+                        className="w-36 text-center text-3xl font-black text-slate-800 bg-white border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl py-2 px-1 focus:outline-none transition-all shadow-3xs"
+                      />
+                      <span className="text-xl font-extrabold text-slate-800">만 원</span>
+                    </div>
+                    {answers.debtAmount && (
+                      <span className="text-xs text-blue-600 font-extrabold bg-blue-50/50 px-2.5 py-1 rounded-lg border border-blue-100 font-sans">
+                        실제 입력 금액: {(() => {
+                          const val = parseInt(answers.debtAmount, 10);
+                          if (isNaN(val) || val <= 0) return '';
+                          if (val >= 10000) {
+                            const eok = Math.floor(val / 10000);
+                            const man = val % 10000;
+                            return `${eok}억 ${man > 0 ? man + '만' : ''} 원`;
+                          }
+                          return `${val.toLocaleString()}만 원`;
+                        })()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Quick increment buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: '+1,000만', val: 1000 },
+                      { label: '+3,000만', val: 3000 },
+                      { label: '+5,000만', val: 5000 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.label}
+                        type="button"
+                        onClick={() => {
+                          const curr = parseInt(answers.debtAmount || '0', 10) || 0;
+                          setAnswers(prev => ({ ...prev, debtAmount: String(curr + btn.val) }));
+                        }}
+                        className="py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs active:scale-[0.98] transition-all cursor-pointer bg-white shadow-3xs"
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setAnswers(prev => ({ ...prev, debtAmount: '' }))}
+                      className="py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-extrabold text-xs active:scale-[0.98] transition-all cursor-pointer bg-white shadow-3xs"
+                    >
+                      초기화
+                    </button>
+                  </div>
+
+                  {/* Manual trigger next button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const debtVal = answers.debtAmount?.trim() || '';
+                        if (!debtVal || parseInt(debtVal, 10) <= 0) {
+                          setFormError('총 채무액을 입력해 주세요. (0만 원보다 큰 수치)');
+                          return;
+                        }
+                        if (parseInt(debtVal, 10) > 250000) {
+                          setFormError('개인회생 한도를 대폭 초과하는 채무액입니다. 회생담보 15억, 무담보 10억 한도 내에서 올바른 값을 입력해 주세요.');
+                          return;
+                        }
+                        setFormError('');
+                        
+                        // Proceed to next step
+                        if (currentStep < QUESTIONS.length - 1) {
+                          setCurrentStep((prev) => prev + 1);
+                        }
+                      }}
+                      className="w-full py-4.5 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-black text-sm tracking-wide shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.99]"
+                    >
+                      <span>확인 및 다음 단계로</span>
+                      <ArrowRight className="w-4 h-4 text-slate-300" />
+                    </button>
+                  </div>
+                </div>
+              ) : QUESTIONS[currentStep].id !== 'difficulties' ? (
                 // Single selection questions (Occupation, Debt, Asset, Region)
                 <div className="space-y-2.5 pt-1">
                   {QUESTIONS[currentStep].options.map((opt) => {
@@ -264,9 +441,15 @@ export default function QualificationCheck({ onComplete, onCancel, mode = 'gener
               </button>
 
               {currentStep < QUESTIONS.length - 1 ? (
-                <div className="flex-1 text-center py-4 text-[13px] sm:text-sm text-slate-400 font-extrabold flex items-center justify-center select-none bg-slate-50 border border-dashed border-slate-200 rounded-xl leading-snug px-2">
-                  옵션을 터치하면 다음 문항으로 자동 이동됩니다.
-                </div>
+                QUESTIONS[currentStep].id === 'monthlyIncome' || QUESTIONS[currentStep].id === 'debtAmount' ? (
+                  <div className="flex-1 text-center py-4 text-[13px] sm:text-sm text-emerald-600 font-extrabold flex items-center justify-center select-none bg-emerald-50/50 border border-dashed border-emerald-200 rounded-xl leading-snug px-2">
+                    💡 금액을 입력한 후 '확인 및 다음 단계로' 버튼을 터치해 주세요.
+                  </div>
+                ) : (
+                  <div className="flex-1 text-center py-4 text-[13px] sm:text-sm text-slate-400 font-extrabold flex items-center justify-center select-none bg-slate-50 border border-dashed border-slate-200 rounded-xl leading-snug px-2">
+                    옵션을 터치하면 다음 문항으로 자동 이동됩니다.
+                  </div>
+                )
               ) : (
                 // Finish button
                 <button
